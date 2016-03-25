@@ -7,6 +7,12 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
 
+//newly added
+import java.util.zip.*;//for zipping
+import javax.crypto.*;//for crypto
+import java.security.*;//for crypto
+import org.apache.commons.codec.digest.*;//for hashing
+
 
 public class MultiThreadChatClient implements Runnable{
 	//The client socket
