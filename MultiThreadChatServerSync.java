@@ -105,9 +105,11 @@ class clientThread extends Thread{
 			*/
 			is = new DataInputStream(clientSocket.getInputStream());
 			os = new PrintStream(clientSocket.getOutputStream());
-			String name;
+			String name = "user";
 
-			while(true){
+
+			//name is automatically assigned now
+			/*while(true){
 				os.println("Enter your name.");
 				name = is.readLine().trim();
 				if(name.indexOf('@') == -1){
@@ -116,11 +118,12 @@ class clientThread extends Thread{
 				else{
 					os.println("The name should not contain '@' character.");
 				}
-			}
+			}*/
 
 			/* Welcome the new the client. */
-			os.println("Welcome " + name + " to our chat room.\nTo leave enter /quit in a new line.");
-
+			//os.println("Welcome " + name + " to our chat room.\nTo leave enter /quit in a new line.");
+			os.println("Connection with Server established");
+			System.out.println(name + " started a connection...");
 			synchronized(this){
 				for(int i = 0; i < maxClientsCount; i++){
 					if(threads[i] != null &&  threads[i] == this){
@@ -166,12 +169,15 @@ class clientThread extends Thread{
 						}
 					}
 				}
+
+				//we will work in public domain, won't use the private chat function
 				else{
 					/* The message is public , broadcast it to all other clients . */
 					//TODO
 					synchronized(this){
 						for(int i = 0; i < maxClientsCount; i++){
 							if(threads[i] != null && threads[i].clientName != null){
+								//this is where we ouput --> line is the data we send
 								threads[i].os.println("< " + name + "> " + line);
 							}
 						}
@@ -186,8 +192,8 @@ class clientThread extends Thread{
 					}
 				}
 			}
-
-			os.println( "* * * Bye " + name + " * * * ");
+			os.println("Connection with Server ended");
+			//os.println( "* * * Bye " + name + " * * * ");
 			/*
 			* Clean up . Set the current thread variable to null so that a new client
 			* could be accepted by the server .

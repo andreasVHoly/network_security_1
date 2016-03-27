@@ -8,10 +8,18 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 //newly added
+
+import javax.xml.bind.DatatypeConverter;
+
 import java.util.zip.*;//for zipping
 import javax.crypto.*;//for crypto
 import java.security.*;//for crypto
-import org.apache.commons.codec.digest.*;//for hashing
+//import org.apache.commons.codec.digest.*;//for hashing
+//new bouncy castle libs
+import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+
 
 
 public class MultiThreadChatClient implements Runnable{
@@ -31,10 +39,12 @@ public class MultiThreadChatClient implements Runnable{
 		int portNumber = 2222;
 		// The default host.
 		String host = "localhost";
-		Scanner in = new Scanner(System.in);
-		System.out.println("Please enter your desired IP address: ");
 
-		if(!host.equals("")){
+		//took below out to make straight connection
+		//Scanner in = new Scanner(System.in);
+		//System.out.println("Please enter your desired IP address: ");
+
+		/*if(!host.equals("")){
 			host = in.nextLine();
 		}
 		if(args.length < 2){
@@ -43,7 +53,7 @@ public class MultiThreadChatClient implements Runnable{
 		else{
 			host = args[0];
 			portNumber = Integer.valueOf(args[1]).intValue();
-		}
+		}*/
 
 
 		/*
@@ -62,6 +72,71 @@ public class MultiThreadChatClient implements Runnable{
 			System.err.println("Couldn't get I/O for the connection to the host "+ host);
 		}
 
+
+
+		//do crypto stuff here
+		Security.addProvider(new BouncyCastleProvider());
+		//message we are sending
+		String message = "This is what we want to encrypt";
+
+		//create hash of the message
+		byte[] digest = null;
+		byte[] signedMessage = null;
+		try{
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.update(message.getBytes("UTF-8"));
+			digest = md.digest();
+
+
+
+			//create private and public keys for client
+
+			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+			keyGen.initialize(1024);
+			KeyPair keys = keyGen.generateKeyPair();
+
+			PrivateKey KRC = keys.getPrivate();
+			PublicKey KUC = keys.getPublic();
+
+			//sign hash with private key
+			byte[] encryptedHash = null;
+			Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			cipher.init(Cipher.ENCRYPT_MODE, KRC);
+			encryptedHash = cipher.doFinal(digest);
+
+
+			//String privateKey = new String(Base64.encodeBase64(KRC.getEncoded(), 0,KRC.getEncoded().length, Base64.NO_WRAP));
+			//String publicKey = new String(Base64.encode(KUC.getEncoded(), 0,KUC.getEncoded().length, Base64.NO_WRAP));
+			System.out.println("Client Private Key Algorithm " + KRC.getAlgorithm());
+			System.out.println("Client Private Key " + KRC);
+			System.out.println("Client Public Key Algorithm " + KUC.getAlgorithm());
+			System.out.println("Client Public Key " + KUC);
+
+
+			//concantenate hash and original message
+
+
+
+			//zip the above
+
+
+			//encrypt the zip with shared key
+
+
+			//encrypt shared key with public key of server
+
+
+			//concat the encrypyted shared key and the encrypted zip
+
+
+			//send off
+
+
+		}
+		catch (Exception e){
+			System.err.println(e);
+		}
+		//end
 
 		/*
 		* If every thing has been initialized then we want to write some data to the
