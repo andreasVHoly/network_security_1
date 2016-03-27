@@ -100,9 +100,9 @@ public class MultiThreadChatClient implements Runnable{
 
 			//sign hash with private key
 			byte[] encryptedHash = null;
-			Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			cipher.init(Cipher.ENCRYPT_MODE, KRC);
-			encryptedHash = cipher.doFinal(digest);
+			Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			RSAcipher.init(Cipher.ENCRYPT_MODE, KRC);
+			encryptedHash = RSAcipher.doFinal(digest);
 
 
 			//String privateKey = new String(Base64.encodeBase64(KRC.getEncoded(), 0,KRC.getEncoded().length, Base64.NO_WRAP));
@@ -113,23 +113,38 @@ public class MultiThreadChatClient implements Runnable{
 			System.out.println("Client Public Key " + KUC);
 
 
-			//concantenate hash and original message
+			//concantenate hash and original message TODO
 
 
 
-			//zip the above
+			//zip the above TODO
 
 
-			//encrypt the zip with shared key
+
+			//encrypt the zip with shared key TODO
+
+			//create shared key
+			//PGPSecretKey
 
 
-			//encrypt shared key with public key of server
+			//create cipher for encryption
+			/*byte[] encryptedHash = null;
+			Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			aescipher.init(Cipher.ENCRYPT_MODE, );//need shared key here TODO
+			encryptedHash = aescipher.doFinal(digest);*/
 
 
-			//concat the encrypyted shared key and the encrypted zip
+			//encrypt shared key with public key of server TODO
+			/*byte[] encryptedHash = null;
+			Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			RSAcipher.init(Cipher.ENCRYPT_MODE, ); TODO we need the public key of server here
+			encryptedHash = RSAcipher.doFinal(digest);*/
+
+			//concat the encrypyted shared key and the encrypted zip TODO
 
 
-			//send off
+			//send off TODO
+			//os.println(data);
 
 
 		}

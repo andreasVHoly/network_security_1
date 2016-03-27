@@ -4,6 +4,22 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.InetAddress;
+
+
+
+
+
+import javax.xml.bind.DatatypeConverter;
+
+import java.util.zip.*;//for zipping
+import javax.crypto.*;//for crypto
+import java.security.*;//for crypto
+//import org.apache.commons.codec.digest.*;//for hashing
+//new bouncy castle libs
+import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+
 /*
 * A chat server that delivers public and private messages .
 */
@@ -140,14 +156,67 @@ class clientThread extends Thread{
 
 			/* Start the conversation . */
 			while(true){
-
+				//message received
 				String line = is.readLine();
+				//we need to end connection
 				if(line.startsWith( "/quit")){
 					break;
 				}
 
+
+				//line var holds the messages received from the client
+				try{
+					//do crypto stuff here
+					Security.addProvider(new BouncyCastleProvider());
+
+					//private and public keys for the server -> need public key in client -> maybe we should make a sharing class somehow? ensure keys are always the same?
+					KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+					keyGen.initialize(1024);
+					KeyPair keys = keyGen.generateKeyPair();
+
+					PrivateKey KRS = keys.getPrivate();
+					PublicKey KUS = keys.getPublic();
+
+					//CONFIDENTIALITY
+
+
+
+
+					//AUTHENTICAION
+
+
+					//create hash of the message
+
+
+					//uncommented as incomplete
+				/*	byte[] digest = null;
+					byte[] signedMessage = null;
+					try{
+						MessageDigest md = MessageDigest.getInstance("SHA-256");
+						md.update(message.getBytes("UTF-8"));//adding message in - needs to be the ouput from previous coode  TODO
+						digest = md.digest();
+
+
+
+						//sign hash with private key
+						byte[] encryptedHash = null;
+						Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+						cipher.init(Cipher.DECRYPT_MODE, KRC);//need KUC here!!!! TODO
+						encryptedHash = cipher.doFinal(digest);//this needs to be signed hash from previous step TODO
+
+						if (encryptedHash == digest){//TODO? is this right
+							System.out.println("Success");
+						}*/
+
+				}
+
+				catch (Exception e){
+					System.err.println(e);
+				}
+
+				//dont really need below as we dont want to echo messages
 				/* If the message is private sent it to the given client. */
-				if(line.startsWith("@")){
+			/*	if(line.startsWith("@")){
 					String[]words = line.split("\\s", 2);
 					if(words.length > 1 && words[1] != null){
 						words[1] = words[1].trim();
@@ -156,10 +225,9 @@ class clientThread extends Thread{
 								for(int i = 0; i < maxClientsCount; i++){
 									if(threads[i] != null && threads[i] != this && threads[i].clientName != null && threads[i].clientName.equals(words[0])){
 											threads[i].os.println("< " + name + "> " + words[1]);
-											/*
-											* Echo this message to let the client know the private
-											* message was sent .
-											*/
+
+											//Echo this message to let the client know the private message was sent .
+
 											//TODO
 											this.os.println("> "+ name + "> " + words[1]);
 											break;
@@ -172,17 +240,17 @@ class clientThread extends Thread{
 
 				//we will work in public domain, won't use the private chat function
 				else{
-					/* The message is public , broadcast it to all other clients . */
+					//The message is public , broadcast it to all other clients .
 					//TODO
 					synchronized(this){
 						for(int i = 0; i < maxClientsCount; i++){
 							if(threads[i] != null && threads[i].clientName != null){
-								//this is where we ouput --> line is the data we send
+								//this is where we ouput --> line is the data we sent from client
 								threads[i].os.println("< " + name + "> " + line);
 							}
 						}
 					}
-				}
+				}*/
 			}
 
 			synchronized(this){

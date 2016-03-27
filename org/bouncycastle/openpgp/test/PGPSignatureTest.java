@@ -55,7 +55,7 @@ public class PGPSignatureTest
     private static final int[] PREFERRED_SYMMETRIC_ALGORITHMS = new int[] { SymmetricKeyAlgorithmTags.AES_128, SymmetricKeyAlgorithmTags.TRIPLE_DES };
     private static final int[] PREFERRED_HASH_ALGORITHMS = new int[] { HashAlgorithmTags.SHA1, HashAlgorithmTags.SHA256 };
     private static final int[] PREFERRED_COMPRESSION_ALGORITHMS = new int[] { CompressionAlgorithmTags.ZLIB };
-    
+
     private static final int TEST_EXPIRATION_TIME = 10000;
     private static final String TEST_USER_ID = "test user id";
     private static final byte[] TEST_DATA = "hello world!\nhello world!\n".getBytes();
@@ -76,7 +76,7 @@ public class PGPSignatureTest
         + "c3RsZS5vcmc+iFkEExECABkFAj9HBzUECwcDAgMVAgMDFgIBAh4BAheAAAoJEM0j"
         + "9enEyjRDAlwAnjTjjt57NKIgyym7OTCwzIU3xgFpAJ0VO5m5PfQKmGJRhaewLSZD"
         + "4nXkHg==");
-    
+
     char[]    dsaPass = "hello world".toCharArray();
 
     byte[]    rsaKeyRing = Base64.decode(
@@ -865,12 +865,12 @@ public class PGPSignatureTest
         }
     }
 
-    private void testMissingSubpackets(byte[] signature) 
+    private void testMissingSubpackets(byte[] signature)
         throws IOException
     {
         JcaPGPObjectFactory f = new JcaPGPObjectFactory(signature);
         Object           obj = f.nextObject();
-        
+
         while (!(obj instanceof PGPSignatureList))
         {
             obj = f.nextObject();
@@ -880,13 +880,13 @@ public class PGPSignatureTest
                 Streams.drain(in);
             }
         }
-        
+
         PGPSignature     sig = ((PGPSignatureList)obj).get(0);
-        
+
         if (sig.getVersion() > 3)
         {
             PGPSignatureSubpacketVector v = sig.getHashedSubPackets();
-            
+
             if (v.getKeyExpirationTime() != 0)
             {
                 fail("key expiration time not zero for missing subpackets");
@@ -917,7 +917,7 @@ public class PGPSignatureTest
 
     private void preferredAlgorithmCheck(
         String type,
-        int[] expected,  
+        int[] expected,
         int[] prefAlgs)
     {
         if (expected == null)
@@ -928,12 +928,12 @@ public class PGPSignatureTest
             }
         }
         else
-        {   
+        {
             if (prefAlgs.length != expected.length)
             {
                 fail("wrong number of preferred " + type + " algorithms found");
             }
-            
+
             for (int i = 0; i != expected.length; i++)
             {
                 if (expected[i] != prefAlgs[i])
@@ -950,14 +950,14 @@ public class PGPSignatureTest
         PGPPublicKey  pubKey,
         PGPPrivateKey privKey)
         throws Exception
-    {            
+    {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         ByteArrayInputStream  testIn = new ByteArrayInputStream(TEST_DATA);
         PGPSignatureGenerator sGen = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(encAlgorithm, hashAlgorithm).setProvider("BC"));
-        
+
         sGen.init(PGPSignature.BINARY_DOCUMENT, privKey);
         sGen.generateOnePassVersion(false).encode(bOut);
-    
+
         PGPLiteralDataGenerator    lGen = new PGPLiteralDataGenerator();
         OutputStream               lOut = lGen.open(
             new UncloseableOutputStream(bOut),
@@ -972,17 +972,17 @@ public class PGPSignatureTest
             lOut.write(ch);
             sGen.update((byte)ch);
         }
-    
+
         lOut.write(TEST_DATA);
         sGen.update(TEST_DATA);
-        
+
         lGen.close();
-    
+
         sGen.generate().encode(bOut);
-    
+
         verifySignature(bOut.toByteArray(), hashAlgorithm, pubKey, TEST_DATA);
     }
-    
+
     private void testTextSig(
         int            encAlgorithm,
         int            hashAlgorithm,
@@ -991,12 +991,12 @@ public class PGPSignatureTest
         byte[]         data,
         byte[]         canonicalData)
         throws Exception
-    {            
+    {
         PGPSignatureGenerator sGen = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(encAlgorithm, HashAlgorithmTags.SHA1).setProvider("BC"));
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         ByteArrayInputStream  testIn = new ByteArrayInputStream(data);
         Date                  creationTime = new Date();
-        
+
         sGen.init(PGPSignature.CANONICAL_TEXT_DOCUMENT, privKey);
         sGen.generateOnePassVersion(false).encode(bOut);
 
@@ -1014,12 +1014,12 @@ public class PGPSignatureTest
             lOut.write(ch);
             sGen.update((byte)ch);
         }
-    
+
         lOut.write(data);
         sGen.update(data);
-        
+
         lGen.close();
-    
+
         PGPSignature sig = sGen.generate();
 
         if (sig.getCreationTime().getTime() == 0)
@@ -1028,32 +1028,32 @@ public class PGPSignatureTest
         }
 
         sig.encode(bOut);
-    
+
         verifySignature(bOut.toByteArray(), hashAlgorithm, pubKey, canonicalData);
     }
-    
+
     private void testSigV3(
         int           encAlgorithm,
         int           hashAlgorithm,
         PGPPublicKey  pubKey,
         PGPPrivateKey privKey)
         throws Exception
-    {            
+    {
         byte[] bytes = generateV3BinarySig(privKey, encAlgorithm, hashAlgorithm);
-    
+
         verifySignature(bytes, hashAlgorithm, pubKey, TEST_DATA);
     }
 
-    private byte[] generateV3BinarySig(PGPPrivateKey privKey, int encAlgorithm, int hashAlgorithm) 
+    private byte[] generateV3BinarySig(PGPPrivateKey privKey, int encAlgorithm, int hashAlgorithm)
         throws Exception
     {
         ByteArrayOutputStream   bOut = new ByteArrayOutputStream();
         ByteArrayInputStream    testIn = new ByteArrayInputStream(TEST_DATA);
         PGPV3SignatureGenerator sGen = new PGPV3SignatureGenerator(new JcaPGPContentSignerBuilder(encAlgorithm, hashAlgorithm).setProvider("BC"));
-        
+
         sGen.init(PGPSignature.BINARY_DOCUMENT, privKey);
         sGen.generateOnePassVersion(false).encode(bOut);
-    
+
         PGPLiteralDataGenerator lGen = new PGPLiteralDataGenerator();
         OutputStream            lOut = lGen.open(
             new UncloseableOutputStream(bOut),
@@ -1068,17 +1068,17 @@ public class PGPSignatureTest
             lOut.write(ch);
             sGen.update((byte)ch);
         }
-    
+
         lOut.write(TEST_DATA);
         sGen.update(TEST_DATA);
-        
+
         lGen.close();
-    
+
         sGen.generate().encode(bOut);
-        
+
         return bOut.toByteArray();
     }
-    
+
     private void testTextSigV3(
         int            encAlgorithm,
         int            hashAlgorithm,
@@ -1087,11 +1087,11 @@ public class PGPSignatureTest
         byte[]         data,
         byte[]         canonicalData)
         throws Exception
-    {            
+    {
         PGPV3SignatureGenerator sGen = new PGPV3SignatureGenerator(new JcaPGPContentSignerBuilder(encAlgorithm, HashAlgorithmTags.SHA1).setProvider("BC"));
         ByteArrayOutputStream   bOut = new ByteArrayOutputStream();
         ByteArrayInputStream    testIn = new ByteArrayInputStream(data);
-        
+
         sGen.init(PGPSignature.CANONICAL_TEXT_DOCUMENT, privKey);
         sGen.generateOnePassVersion(false).encode(bOut);
 
@@ -1109,12 +1109,12 @@ public class PGPSignatureTest
             lOut.write(ch);
             sGen.update((byte)ch);
         }
-    
+
         lOut.write(data);
         sGen.update(data);
-        
+
         lGen.close();
-    
+
         PGPSignature sig = sGen.generate();
 
         if (sig.getCreationTime().getTime() == 0)
@@ -1126,12 +1126,12 @@ public class PGPSignatureTest
 
         verifySignature(bOut.toByteArray(), hashAlgorithm, pubKey, canonicalData);
     }
-    
+
     private void verifySignature(
-        byte[] encodedSig, 
-        int hashAlgorithm, 
-        PGPPublicKey pubKey,  
-        byte[] original) 
+        byte[] encodedSig,
+        int hashAlgorithm,
+        PGPPublicKey pubKey,
+        byte[] original)
         throws IOException, PGPException, NoSuchProviderException, SignatureException
     {
         JcaPGPObjectFactory        pgpFact = new JcaPGPObjectFactory(encodedSig);
@@ -1139,16 +1139,16 @@ public class PGPSignatureTest
         PGPOnePassSignature     ops = p1.get(0);
         PGPLiteralData          p2 = (PGPLiteralData)pgpFact.nextObject();
         InputStream             dIn = p2.getInputStream();
-    
+
         ops.init(new JcaPGPContentVerifierBuilderProvider().setProvider("BC"), pubKey);
-        
+
         int ch;
 
         while ((ch = dIn.read()) >= 0)
         {
             ops.update((byte)ch);
         }
-    
+
         PGPSignatureList p3 = (PGPSignatureList)pgpFact.nextObject();
         PGPSignature sig = p3.get(0);
 
@@ -1166,27 +1166,27 @@ public class PGPSignatureTest
         {
             fail("key id mismatch in signature");
         }
-        
+
         if (!ops.verify(sig))
         {
             fail("Failed generated signature check - " + hashAlgorithm);
         }
-        
+
         sig.init(new JcaPGPContentVerifierBuilderProvider().setProvider("BC"), pubKey);
-        
+
         for (int i = 0; i != original.length; i++)
         {
             sig.update(original[i]);
         }
-        
+
         sig.update(original);
-        
+
         if (!sig.verify())
         {
             fail("Failed generated signature check against original data");
         }
     }
-    
+
     public String getName()
     {
         return "PGPSignatureTest";
