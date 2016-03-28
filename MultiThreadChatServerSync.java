@@ -119,6 +119,7 @@ class clientThread extends Thread{
 		maxClientsCount = threads.length;
 	}
 
+	/**/
 
 	public void run(){
 		int maxClientsCount = this.maxClientsCount;
@@ -186,32 +187,32 @@ class clientThread extends Thread{
 			ArrayList<String> packets = new ArrayList<String>();
 
 			/* Start the conversation . */
-			while(true){
+			// while(true){
 
 
-				//message received
-				String line = is.readLine();
-				System.out.println("Here comes the message from client:");
-				System.out.println("msg received " + line);
-				//we need to end connection
-
-				if (line.startsWith( "_start_")){
-					System.out.println("found start");
-					packets.add(line.substring(7));
-					line = line.substring(7);
-					System.out.println("found starte");
-					continue;
-				}
-
-				if (line.endsWith("_end_")){
-					System.out.println("found end");
-					packets.add(line.substring(0,line.length()-5));
-					System.out.println("found ende");
-					break;
-				}
-
-
-				packets.add(line);
+				// //message received
+				// String line = is.readLine();
+				// System.out.println("Here comes the message from client:");
+				// System.out.println("msg received " + line);
+				// //we need to end connection
+				//
+				// if (line.startsWith( "_start_")){
+				// 	System.out.println("found start");
+				// 	packets.add(line.substring(7));
+				// 	line = line.substring(7);
+				// 	System.out.println("found starte");
+				// 	continue;
+				// }
+				//
+				// if (line.endsWith("_end_")){
+				// 	System.out.println("found end");
+				// 	packets.add(line.substring(0,line.length()-5));
+				// 	System.out.println("found ende");
+				// 	break;
+				// }
+				//
+				//
+				// packets.add(line);
 
 
 
@@ -230,13 +231,13 @@ class clientThread extends Thread{
 
 
 				//System.out.println(line);
-				if(line.startsWith( "/quit")){
-					break;
-				}
+				// if(line.startsWith( "/quit")){
+				// 	break;
+				// }
 
 
 				//line var holds the messages received from the client
-				/*try{
+				try{
 					//do crypto stuff here
 					System.out.println("starting...");
 
@@ -250,28 +251,34 @@ class clientThread extends Thread{
 					System.out.println("public key gotten...");
 
 					//errything is in line
-					byte[] message = line.getBytes();
-					System.out.println(message);
+					path = Paths.get("encrypt_Message.txt");
+					byte[] message = Files.readAllBytes(path);
+					// System.out.println(message);
 					//split up
 					byte[] keyPart = new byte[128];
-					byte[] crypPart = new byte[message.length];
+					byte[] crypPart = new byte[message.length - 128];
+					System.out.println("Signature...");
 					for(int i = 0; i < 128; i++){
 						keyPart[i] = message[i];
+						System.out.print(keyPart[i] + ",");
 					}
-					System.out.println("message split intmediate...");
+					System.out.println("Ciphertext...");
 					for(int j = 128, k = 0; j < message.length; j++, k++){
 						crypPart[k] = message[j];
+						System.out.print(crypPart[k] + ",");
 					}
-
+					//
 					System.out.println("message split...");
 
 					//CONFIDENTIALITY
 
 					//decrypt with the public key of client
-					byte[] encryptedKey = null;
 					Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+					System.out.println("Gets Packet");
 					packet.init(Cipher.DECRYPT_MODE, KRS);
-					encryptedKey = packet.doFinal(keyPart);
+					System.out.println("Decrypt Packet");
+					byte[] encryptedKey = packet.doFinal(keyPart);
+					System.out.println("EncryptKey");
 
 					System.out.println("shared key decrypted...");
 					//decrypt shared key
@@ -351,7 +358,7 @@ class clientThread extends Thread{
 
 				catch (Exception e){
 					System.err.println(e);
-				}*/
+				}
 
 				//dont really need below as we dont want to echo messages
 				/* If the message is private sent it to the given client. */
@@ -390,13 +397,14 @@ class clientThread extends Thread{
 						}
 					}
 				}*/
-			}
+
+			// }
 
 
-			System.out.println("edited content");
-			for(int l = 0; l < packets.size(); l++){
-				System.out.println(packets.get(l));
-			}
+			// System.out.println("edited content");
+			// for(int l = 0; l < packets.size(); l++){
+			// 	System.out.println(packets.get(l));
+			// }
 
 
 			synchronized(this){

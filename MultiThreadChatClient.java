@@ -248,8 +248,15 @@ public class MultiThreadChatClient implements Runnable{
 			//encrypt shared key with public key of server TODO
 			byte[] encryptedKey = null;
 			Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			packet.init(Cipher.ENCRYPT_MODE, KUS); //TODO we need the public key of server here
+			packet.init(Cipher.ENCRYPT_MODE, KUS);
 			encryptedKey = packet.doFinal(secretKey.getEncoded());
+			System.out.println();
+			System.out.println("Signature...");
+			for (int i = 0; i < encryptedKey.length; i++) {
+				System.out.print(encryptedKey[i] + ",");
+			}
+			System.out.println();
+
 
 			//concat the encrypyted shared key and the encrypted zip TODO
 
@@ -264,28 +271,35 @@ public class MultiThreadChatClient implements Runnable{
 			//send off TODO
 			//fin is final packet
 			String lol = new String(fin);
-			//System.out.println(lol);
+			System.out.println(lol);
 
-			String msg = "line one\nline two\nl3\nl4";
-			/*for (int k = 0; k < msg.length; k++ ) {
-				if ()
-			}*/
-			//System.out.println("test");
-			int index = 0;
-			String edit = "";
+			BufferedWriter w = new BufferedWriter(new FileWriter("Signature.txt"));
+			for (int i = 0; i < fin.length; i++) {
+				w.write(fin[i] + ",");
+			}
+			w.write("end");
+			w.close();
 
-			System.out.println("***old " + msg);
-
-			/*while( (index = msg.indexOf("\n")) != -1){
-				edit += msg.substring(0,index);
-				edit += "nl_c";
-				edit += msg.substring(index+1,msg.length());
-				msg = edit;
-			}*/
-			msg = "_start_" + msg + "_end_";
-
-			System.out.println("***new " + msg);
-			os.println(msg);
+			// String msg = "line one\nline two\nl3\nl4";
+			// /*for (int k = 0; k < msg.length; k++ ) {
+			// 	if ()
+			// }*/
+			// //System.out.println("test");
+			// int index = 0;
+			// String edit = "";
+			//
+			// System.out.println("***old " + msg);
+			//
+			// /*while( (index = msg.indexOf("\n")) != -1){
+			// 	edit += msg.substring(0,index);
+			// 	edit += "nl_c";
+			// 	edit += msg.substring(index+1,msg.length());
+			// 	msg = edit;
+			// }*/
+			// msg = "_start_" + msg + "_end_";
+			//
+			// System.out.println("***new " + msg);
+			// os.println(msg);
 
 
 		}
