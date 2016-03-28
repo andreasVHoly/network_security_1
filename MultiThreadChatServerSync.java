@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.InetAddress;
+import java.io.*;
 
 
 
@@ -14,6 +15,7 @@ import javax.xml.bind.DatatypeConverter;
 import java.util.zip.*;//for zipping
 import javax.crypto.*;//for crypto
 import java.security.*;//for crypto
+import java.security.spec.*;
 //import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
@@ -140,6 +142,27 @@ class clientThread extends Thread{
 			//os.println("Welcome " + name + " to our chat room.\nTo leave enter /quit in a new line.");
 			os.println("Connection with Server established");
 			System.out.println(name + " started a connection...");
+
+
+			//create server keys
+			try{
+				KeyPairGenerator keyGen2 = KeyPairGenerator.getInstance("RSA");
+				keyGen2.initialize(1024);
+				KeyPair serverkeys = keyGen2.generateKeyPair();
+
+				PrivateKey KRS = serverkeys.getPrivate();
+				PublicKey KUS = serverkeys.getPublic();
+				//Write KUS to textfile server_public_key.txt
+				byte[] KUSArray = KUS.getEncoded();
+
+				FileOutputStream fos = new FileOutputStream("server_public_key.txt");
+				fos.write(KUSArray);
+				fos.close();
+			}
+			catch (Exception e){
+				System.out.println(e);
+			}
+
 			synchronized(this){
 				for(int i = 0; i < maxClientsCount; i++){
 					if(threads[i] != null &&  threads[i] == this){
@@ -159,6 +182,8 @@ class clientThread extends Thread{
 				//message received
 				String line = is.readLine();
 				//we need to end connection
+
+				System.out.println(line);
 				if(line.startsWith( "/quit")){
 					break;
 				}
@@ -169,13 +194,11 @@ class clientThread extends Thread{
 					//do crypto stuff here
 					Security.addProvider(new BouncyCastleProvider());
 
-					//private and public keys for the server -> need public key in client -> maybe we should make a sharing class somehow? ensure keys are always the same?
-					KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-					keyGen.initialize(1024);
-					KeyPair keys = keyGen.generateKeyPair();
+					//GET CLEINT PUBLIC KEY KUC
+					
 
-					PrivateKey KRS = keys.getPrivate();
-					PublicKey KUS = keys.getPublic();
+
+					// PublicKey KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytes));
 
 					//CONFIDENTIALITY
 

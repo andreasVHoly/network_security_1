@@ -11,10 +11,12 @@ import java.util.*;
 //newly added
 import java.io.*;
 import javax.xml.bind.DatatypeConverter;
+import java.nio.file.*;
 
 import java.util.zip.*;//for zipping
 import javax.crypto.*;//for crypto
 import java.security.*;//for crypto
+import java.security.spec.*;
 //import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
@@ -99,6 +101,19 @@ public class MultiThreadChatClient implements Runnable{
 
 			PrivateKey KRC = keys.getPrivate();
 			PublicKey KUC = keys.getPublic();
+			byte[] KUCArray = KUC.getEncoded();
+
+			FileOutputStream fos = new FileOutputStream("client_public_key.txt");
+			fos.write(KUCArray);
+			fos.close();
+
+			// //Write client public key to file for Server
+			// BufferedWriter fileWriter = new BufferedWriter(new FileWriter("client_public_key.txt"));
+			//
+			// for (int i = 0; i < KUCArray.length; i++) {
+			// 	fileWriter.write(KUCArray[i]);
+			// }
+			// fileWriter.close();
 
 			//sign hash with private key
 			byte[] encryptedHash = null;
@@ -116,7 +131,7 @@ public class MultiThreadChatClient implements Runnable{
 			System.out.println("Client Public Key " + KUC);
 
 
-			//concantenate hash and original message TODO
+			//concantenate hash and original message
 			//signedMessage = encryptedHash + message.getBytes();
 
 
@@ -152,16 +167,21 @@ public class MultiThreadChatClient implements Runnable{
 
 			byte[] op = o.toByteArray();
 
-			System.out.println("legth of zip " + zipLen);
+			System.out.println("legth of zip " + op.length);
 
 			System.out.println("\noriginal......................");
 
 			for (int i = 0;	i < signedMessage.length ; i++) {
 				System.out.print(signedMessage[i]+",");
 			}
+			System.out.println("\nzipped data......................");
+			for (int j = 0;	j < op.length ; j++) {
+				System.out.print(op[j]+",");
+			}
+			System.out.println("\n");
+			//TODO put this on server side
 
-
-			Inflater decompresser = new Inflater();
+			/*Inflater decompresser = new Inflater();
 			decompresser.setInput(op, 0, op.length);
 			byte[] result = new byte[1024];
 
@@ -176,38 +196,75 @@ public class MultiThreadChatClient implements Runnable{
 			//int resultLength = decompresser.inflate(result);
 			decompresser.end();
 
-			System.out.println("\nDecompressed......................");
+
+
+			System.out.println("\nDecompressed Message......................");
 
 
 			for (int j = 0;	j < op2.length ; j++) {
 				System.out.print(op2[j]+",");
 			}
 
-			System.out.println("\n");
+			System.out.println("\n");*/
+
+
+
 			//encrypt the zip with shared key TODO
 
 			//create shared key
 			//PGPSecretKey
 
+			KeyGenerator secretKeyGen = KeyGenerator.getInstance("AES");
+	        secretKeyGen.init(128);
+	        SecretKey secretKey = secretKeyGen.generateKey();
 
-			//create cipher for encryption
-			/*byte[] encryptedHash = null;
+			//create cipher for encryption and encrypt zip\
+
+			byte[] encryptedPackage = null;
 			Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			aescipher.init(Cipher.ENCRYPT_MODE, );//need shared key here TODO
-			encryptedHash = aescipher.doFinal(digest);*/
+			aescipher.init(Cipher.ENCRYPT_MODE, secretKey);
+			encryptedPackage = aescipher.doFinal(op);
+
+
+			//TODO get server key
+			// BufferedReader fileReader = new BufferedReader(new FileReader("server_public_key.txt"));
+			// String s = fileReader.readLine();  //read in the byte array from textfile
+			// fileReader.close();
+			// String[] byteRep = s.split("");
+			// for (int i = 0; i < byteRep.length; i++) {
+			// 	System.out.println(Byte.parseByte(byteRep[i]));
+			// }
+			// //Parse string into byte array
+			// byte[] bytes = new byte[10];//Byte.parseByte(s);
+			// System.out.println(s);
+			// System.out.println(bytes);
+			// FileInputStream fis = new FileInputStream("client_public_key.txt");
+			Path path = Paths.get("server_public_key.txt");
+			byte [] SKey = Files.readAllBytes(path);
+
+			PublicKey KUS = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(SKey));
 
 
 			//encrypt shared key with public key of server TODO
-			/*byte[] encryptedHash = null;
-			Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			RSAcipher.init(Cipher.ENCRYPT_MODE, ); TODO we need the public key of server here
-			encryptedHash = RSAcipher.doFinal(digest);*/
+			byte[] encryptedKey = null;
+			Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			packet.init(Cipher.ENCRYPT_MODE, KUS); //TODO we need the public key of server here
+			encryptedKey = packet.doFinal(secretKey.getEncoded());
 
 			//concat the encrypyted shared key and the encrypted zip TODO
 
+			ByteArrayOutputStream finalMessage = new ByteArrayOutputStream( );
+			finalMessage.write(encryptedKey);
+			finalMessage.write(encryptedPackage);
+			System.out.println("Key size " + encryptedKey.length);
+			byte[] fin = finalMessage.toByteArray();
+			finalMessage.close();
+
 
 			//send off TODO
-			//os.println(data);
+			//fin is final packet
+			String lol = new String(fin);
+			os.println(lol);
 
 
 		}
