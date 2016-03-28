@@ -7,8 +7,9 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
 
-//newly added
 
+//newly added
+import java.io.*;
 import javax.xml.bind.DatatypeConverter;
 
 import java.util.zip.*;//for zipping
@@ -107,7 +108,7 @@ public class MultiThreadChatClient implements Runnable{
 
 			//String privateKey = new String(Base64.encodeBase64(KRC.getEncoded(), 0,KRC.getEncoded().length, Base64.NO_WRAP));
 			//String publicKey = new String(Base64.encode(KUC.getEncoded(), 0,KUC.getEncoded().length, Base64.NO_WRAP));
-			System.out.println("Final Size: " + encryptedHash.length);
+			System.out.println("Signed Hash Size: " + encryptedHash.length);
 			System.out.println("Client Private Key Algorithm " + KRC.getAlgorithm());
 			System.out.println("Client Private Key " + KRC);
 			System.out.println("Client Public Key Algorithm " + KUC.getAlgorithm());
@@ -115,8 +116,17 @@ public class MultiThreadChatClient implements Runnable{
 
 
 			//concantenate hash and original message TODO
+			//signedMessage = encryptedHash + message.getBytes();
 
 
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+			outputStream.write(encryptedHash);
+			outputStream.write(message.getBytes());
+
+			signedMessage = outputStream.toByteArray( );
+
+
+			System.out.println("Signed Message Size: " + signedMessage.length);
 
 			//zip the above TODO
 
