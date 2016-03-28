@@ -79,6 +79,7 @@ public class MultiThreadChatClient implements Runnable{
 		Security.addProvider(new BouncyCastleProvider());
 		//message we are sending
 		String message = "This is what we want to encrypt!!!!!!!! Lol";
+		//String message = "This is what we want to encrypt!!!!!!!! Lol. we are now testing the zipping and want to ceajd hfvjh  dskhba dhsd jhsad ada dj adj adj da d ldkkf nhd fj df bfddf ankfdbj f ";
 
 		//create hash of the message
 		byte[] digest = null;
@@ -123,15 +124,66 @@ public class MultiThreadChatClient implements Runnable{
 			outputStream.write(encryptedHash);
 			outputStream.write(message.getBytes());
 
-			signedMessage = outputStream.toByteArray( );
-
-
+			signedMessage = outputStream.toByteArray();
+			outputStream.close();
 			System.out.println("Signed Message Size: " + signedMessage.length);
 
 			//zip the above TODO
 
+			byte[] output = new byte[1024];
+
+			Deflater compress = new Deflater();
+			compress.setInput(signedMessage);
+			ByteArrayOutputStream o = new ByteArrayOutputStream(signedMessage.length);
+			compress.finish();
+
+			//this could break because we might have more data
+			int zipLen = 0;
+			int initSize = 100;
+			while(!compress.finished()){
+				int count = compress.deflate(output);
+				o.write(output,0,count);
+			}
+			o.close();
+			/*if((zipLen = compress.deflate(output)) == 0){
+				System.out.println("FOK");
+			}*/
+			compress.end();
+
+			byte[] op = o.toByteArray();
+
+			System.out.println("legth of zip " + zipLen);
+
+			System.out.println("\noriginal......................");
+
+			for (int i = 0;	i < signedMessage.length ; i++) {
+				System.out.print(signedMessage[i]+",");
+			}
 
 
+			Inflater decompresser = new Inflater();
+			decompresser.setInput(op, 0, op.length);
+			byte[] result = new byte[1024];
+
+
+			ByteArrayOutputStream o2 = new ByteArrayOutputStream(signedMessage.length);
+			while(!decompresser.finished()){
+				int count = decompresser.inflate(result);
+				o2.write(result,0,count);
+			}
+			o2.close();
+			byte[] op2 = o2.toByteArray();
+			//int resultLength = decompresser.inflate(result);
+			decompresser.end();
+
+			System.out.println("\nDecompressed......................");
+
+
+			for (int j = 0;	j < op2.length ; j++) {
+				System.out.print(op2[j]+",");
+			}
+
+			System.out.println("\n");
 			//encrypt the zip with shared key TODO
 
 			//create shared key
