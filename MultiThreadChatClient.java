@@ -263,10 +263,10 @@ public class MultiThreadChatClient implements Runnable{
 
 			//send off TODO
 			//fin is final packet
-			String msg = new String(fin);
+			String lol = new String(fin);
 			//System.out.println(lol);
 
-			//String msg = "line one\nline two";
+			String msg = "line one\nline two\nl3\nl4";
 			/*for (int k = 0; k < msg.length; k++ ) {
 				if ()
 			}*/
@@ -276,16 +276,16 @@ public class MultiThreadChatClient implements Runnable{
 
 			System.out.println("***old " + msg);
 
-			while( (index = msg.indexOf("\n")) != -1){
+			/*while( (index = msg.indexOf("\n")) != -1){
 				edit += msg.substring(0,index);
 				edit += "nl_c";
 				edit += msg.substring(index+1,msg.length());
 				msg = edit;
-			}
+			}*/
+			msg = "_start_" + msg + "_end_";
 
-
-			System.out.println("***new " + edit);
-			os.println(edit);
+			System.out.println("***new " + msg);
+			os.println(msg);
 
 
 		}

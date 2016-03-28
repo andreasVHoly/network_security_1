@@ -20,6 +20,8 @@ import java.io.*;
 import javax.xml.bind.DatatypeConverter;
 import java.nio.file.*;
 import javax.crypto.spec.*;
+
+import java.util.*;
 //import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
@@ -181,25 +183,50 @@ class clientThread extends Thread{
 				}
 			}
 
+			ArrayList<String> packets = new ArrayList<String>();
+
 			/* Start the conversation . */
 			while(true){
+
+
 				//message received
 				String line = is.readLine();
 				System.out.println("Here comes the message from client:");
 				System.out.println("msg received " + line);
 				//we need to end connection
 
+				if (line.startsWith( "_start_")){
+					System.out.println("found start");
+					packets.add(line.substring(7));
+					line = line.substring(7);
+					System.out.println("found starte");
+					continue;
+				}
 
-				int index = 0;
+				if (line.endsWith("_end_")){
+					System.out.println("found end");
+					packets.add(line.substring(0,line.length()-5));
+					System.out.println("found ende");
+					break;
+				}
+
+
+				packets.add(line);
+
+
+
+				/*int index = 0;
 				String edit = "";
 				while( (index = line.indexOf("nl_c")) != -1){
 					edit += line.substring(0,index);
 					edit += "\n";
 					edit += line.substring(index+4,line.length());
 					line = edit;
-				}
+				}*/
 
-				System.out.println("msg altered " + line);
+
+
+				// /System.out.println("msg altered " + line);
 
 
 				//System.out.println(line);
@@ -364,6 +391,13 @@ class clientThread extends Thread{
 					}
 				}*/
 			}
+
+
+			System.out.println("edited content");
+			for(int l = 0; l < packets.size(); l++){
+				System.out.println(packets.get(l));
+			}
+
 
 			synchronized(this){
 				for(int i = 0; i < maxClientsCount; i++){
