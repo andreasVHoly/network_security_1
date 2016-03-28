@@ -77,7 +77,7 @@ public class MultiThreadChatClient implements Runnable{
 		//do crypto stuff here
 		Security.addProvider(new BouncyCastleProvider());
 		//message we are sending
-		String message = "This is what we want to encrypt";
+		String message = "This is what we want to encrypt!!!!!!!! Lol";
 
 		//create hash of the message
 		byte[] digest = null;
@@ -87,7 +87,7 @@ public class MultiThreadChatClient implements Runnable{
 			md.update(message.getBytes("UTF-8"));
 			digest = md.digest();
 
-
+			System.out.println("Digest Size: " + digest.length);
 
 			//create private and public keys for client
 
@@ -107,6 +107,7 @@ public class MultiThreadChatClient implements Runnable{
 
 			//String privateKey = new String(Base64.encodeBase64(KRC.getEncoded(), 0,KRC.getEncoded().length, Base64.NO_WRAP));
 			//String publicKey = new String(Base64.encode(KUC.getEncoded(), 0,KUC.getEncoded().length, Base64.NO_WRAP));
+			System.out.println("Final Size: " + encryptedHash.length);
 			System.out.println("Client Private Key Algorithm " + KRC.getAlgorithm());
 			System.out.println("Client Private Key " + KRC);
 			System.out.println("Client Public Key Algorithm " + KUC.getAlgorithm());

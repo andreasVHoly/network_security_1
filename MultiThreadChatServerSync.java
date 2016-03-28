@@ -24,10 +24,10 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 * A chat server that delivers public and private messages .
 */
 public class MultiThreadChatServerSync{
-	// The s e r v e r s o c k e t .
+	// The server socket .
 	private static ServerSocket serverSocket = null;
 
-	// The c l i e n t s o c k e t .
+	// The client socket .
 	private static Socket clientSocket = null;
 
 	// This chatserver can accept up to maxClientsCount clients ’ connections .
