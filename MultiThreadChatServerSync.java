@@ -394,9 +394,135 @@ class clientThread extends Thread{
 
 
 			System.out.println("edited content");
+			String line1 = "";
 			for(int l = 0; l < packets.size(); l++){
-				System.out.println(packets.get(l));
+				line1 += packets.get(l);
+				//System.out.println(packets.get(l) + " **" + l + "**");
 			}
+
+
+
+			//line var holds the messages received from the client
+			try{
+				//do crypto stuff here
+				System.out.println("starting...");
+
+				Security.addProvider(new BouncyCastleProvider());
+
+				//GET CLEINT PUBLIC KEY KUC
+				Path path = Paths.get("client_public_key.txt");
+				byte [] CKey = Files.readAllBytes(path);
+				PublicKey KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(CKey));
+
+				System.out.println("public key gotten...");
+
+				//errything is in line
+				byte[] message = line1.getBytes("UTF-8");
+				System.out.println(message);
+				//split up
+				byte[] keyPart = new byte[128];
+				byte[] crypPart = new byte[message.length];
+				for(int i = 0; i < 128; i++){
+					keyPart[i] = message[i];
+				}
+				System.out.println("message split intmediate...");
+				for(int j = 128, k = 0; j < message.length; j++, k++){
+					crypPart[k] = message[j];
+				}
+
+				System.out.println("message split...");
+
+				//CONFIDENTIALITY
+
+				//decrypt with the public key of client
+				byte[] encryptedKey = null;
+				Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+				packet.init(Cipher.DECRYPT_MODE, KRS);
+				encryptedKey = packet.doFinal(keyPart);
+
+				System.out.println("shared key decrypted...");
+				//decrypt shared key
+
+				SecretKey secretKey = new SecretKeySpec(encryptedKey, 0, encryptedKey.length, "AES");
+
+				System.out.println("shared key constructed...");
+				byte[] encryptedPackage = null;
+				Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+				aescipher.init(Cipher.DECRYPT_MODE, secretKey);
+				encryptedPackage = aescipher.doFinal(crypPart);
+
+
+				System.out.println("decrypted with shared key...");
+
+				//AUTHENTICAION
+
+
+				//
+
+
+				Inflater decompresser = new Inflater();
+				decompresser.setInput(encryptedPackage, 0, encryptedPackage.length);
+				byte[] result = new byte[1024];
+
+
+				ByteArrayOutputStream o2 = new ByteArrayOutputStream(encryptedPackage.length);
+				while(!decompresser.finished()){
+					int count = decompresser.inflate(result);
+					o2.write(result,0,count);
+				}
+				o2.close();
+				byte[] op2 = o2.toByteArray();
+				decompresser.end();
+				System.out.println("unzipped...");
+
+				//op2 is decompressed message
+				byte[] sigPart = new byte[128];
+				byte[] messagePart = new byte[op2.length-128];
+				for(int i = 0; i < 128; i++){
+					sigPart[i] = op2[i];
+				}
+
+				for(int j = 128, k = 0; j < op2.length; j++, k++){
+					messagePart[k] = op2[j];
+				}
+
+				System.out.println("split message again...");
+
+				String origMessage = new String(messagePart);
+				System.out.println("message reads: " + origMessage );
+				//create hash of the message
+
+				byte[] digest = null;
+				MessageDigest md = MessageDigest.getInstance("SHA-256");
+				md.update(messagePart);
+				digest = md.digest();
+
+				System.out.println("own hash created...");
+
+
+				//sign hash with private key
+				byte[] decryptedHash = null;
+				Cipher hashCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+				hashCipher.init(Cipher.DECRYPT_MODE, KUC);
+				decryptedHash = hashCipher.doFinal(sigPart);
+
+
+
+
+				if (decryptedHash == digest){
+					System.out.println("fuck yea");
+				}
+
+
+			}
+
+			catch (Exception e){
+				System.err.println(e);
+			}
+
+
+
+
 
 
 			synchronized(this){
