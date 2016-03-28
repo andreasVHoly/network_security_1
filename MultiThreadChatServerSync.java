@@ -16,6 +16,10 @@ import java.util.zip.*;//for zipping
 import javax.crypto.*;//for crypto
 import java.security.*;//for crypto
 import java.security.spec.*;
+import java.io.*;
+import javax.xml.bind.DatatypeConverter;
+import java.nio.file.*;
+import javax.crypto.spec.*;
 //import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
@@ -54,7 +58,7 @@ public class MultiThreadChatServerSync{
 			serverSocket = new ServerSocket(portNumber);
 		}
 		catch(IOException e){
-			System.out.println(e);
+			System.out.println("IO_ExceptionERROR" + e);
 		}
 
 		 /*
@@ -79,7 +83,7 @@ public class MultiThreadChatServerSync{
 				}
 			}
 			catch(IOException e){
-				System.out.println(e);
+				System.out.println("IOException Error" + e);
 			}
 		}
 	}//main
@@ -143,14 +147,14 @@ class clientThread extends Thread{
 			os.println("Connection with Server established");
 			System.out.println(name + " started a connection...");
 
-
+			PrivateKey KRS = null;
 			//create server keys
 			try{
 				KeyPairGenerator keyGen2 = KeyPairGenerator.getInstance("RSA");
 				keyGen2.initialize(1024);
 				KeyPair serverkeys = keyGen2.generateKeyPair();
 
-				PrivateKey KRS = serverkeys.getPrivate();
+				KRS = serverkeys.getPrivate();
 				PublicKey KUS = serverkeys.getPublic();
 				//Write KUS to textfile server_public_key.txt
 				byte[] KUSArray = KUS.getEncoded();
@@ -160,7 +164,7 @@ class clientThread extends Thread{
 				fos.close();
 			}
 			catch (Exception e){
-				System.out.println(e);
+				System.out.println("Exception" + e);
 			}
 
 			synchronized(this){
@@ -181,61 +185,146 @@ class clientThread extends Thread{
 			while(true){
 				//message received
 				String line = is.readLine();
+				System.out.println("Here comes the message from client:");
+				System.out.println("msg received " + line);
 				//we need to end connection
 
-				System.out.println(line);
+
+				int index = 0;
+				String edit = "";
+				while( (index = line.indexOf("nl_c")) != -1){
+					edit += line.substring(0,index);
+					edit += "\n";
+					edit += line.substring(index+4,line.length());
+					line = edit;
+				}
+
+				System.out.println("msg altered " + line);
+
+
+				//System.out.println(line);
 				if(line.startsWith( "/quit")){
 					break;
 				}
 
 
 				//line var holds the messages received from the client
-				try{
+				/*try{
 					//do crypto stuff here
+					System.out.println("starting...");
+
 					Security.addProvider(new BouncyCastleProvider());
 
 					//GET CLEINT PUBLIC KEY KUC
-					
+					Path path = Paths.get("client_public_key.txt");
+					byte [] CKey = Files.readAllBytes(path);
+					PublicKey KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(CKey));
 
+					System.out.println("public key gotten...");
 
-					// PublicKey KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(bytes));
+					//errything is in line
+					byte[] message = line.getBytes();
+					System.out.println(message);
+					//split up
+					byte[] keyPart = new byte[128];
+					byte[] crypPart = new byte[message.length];
+					for(int i = 0; i < 128; i++){
+						keyPart[i] = message[i];
+					}
+					System.out.println("message split intmediate...");
+					for(int j = 128, k = 0; j < message.length; j++, k++){
+						crypPart[k] = message[j];
+					}
+
+					System.out.println("message split...");
 
 					//CONFIDENTIALITY
 
+					//decrypt with the public key of client
+					byte[] encryptedKey = null;
+					Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+					packet.init(Cipher.DECRYPT_MODE, KRS);
+					encryptedKey = packet.doFinal(keyPart);
+
+					System.out.println("shared key decrypted...");
+					//decrypt shared key
+
+					SecretKey secretKey = new SecretKeySpec(encryptedKey, 0, encryptedKey.length, "AES");
+
+					System.out.println("shared key constructed...");
+					byte[] encryptedPackage = null;
+					Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+					aescipher.init(Cipher.DECRYPT_MODE, secretKey);
+					encryptedPackage = aescipher.doFinal(crypPart);
 
 
+					System.out.println("decrypted with shared key...");
 
 					//AUTHENTICAION
 
 
+					//
+
+
+					Inflater decompresser = new Inflater();
+					decompresser.setInput(encryptedPackage, 0, encryptedPackage.length);
+					byte[] result = new byte[1024];
+
+
+					ByteArrayOutputStream o2 = new ByteArrayOutputStream(encryptedPackage.length);
+					while(!decompresser.finished()){
+						int count = decompresser.inflate(result);
+						o2.write(result,0,count);
+					}
+					o2.close();
+					byte[] op2 = o2.toByteArray();
+					decompresser.end();
+					System.out.println("unzipped...");
+
+					//op2 is decompressed message
+					byte[] sigPart = new byte[128];
+					byte[] messagePart = new byte[op2.length-128];
+					for(int i = 0; i < 128; i++){
+						sigPart[i] = op2[i];
+					}
+
+					for(int j = 128, k = 0; j < op2.length; j++, k++){
+						messagePart[k] = op2[j];
+					}
+
+					System.out.println("split message again...");
+
+					String origMessage = new String(messagePart);
+					System.out.println("message reads: " + origMessage );
 					//create hash of the message
 
+					byte[] digest = null;
+					MessageDigest md = MessageDigest.getInstance("SHA-256");
+					md.update(messagePart);
+					digest = md.digest();
 
-					//uncommented as incomplete
-				/*	byte[] digest = null;
-					byte[] signedMessage = null;
-					try{
-						MessageDigest md = MessageDigest.getInstance("SHA-256");
-						md.update(message.getBytes("UTF-8"));//adding message in - needs to be the ouput from previous coode  TODO
-						digest = md.digest();
+					System.out.println("own hash created...");
 
 
+					//sign hash with private key
+					byte[] decryptedHash = null;
+					Cipher hashCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+					hashCipher.init(Cipher.DECRYPT_MODE, KUC);
+					decryptedHash = hashCipher.doFinal(sigPart);
 
-						//sign hash with private key
-						byte[] encryptedHash = null;
-						Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-						cipher.init(Cipher.DECRYPT_MODE, KRC);//need KUC here!!!! TODO
-						encryptedHash = cipher.doFinal(digest);//this needs to be signed hash from previous step TODO
 
-						if (encryptedHash == digest){//TODO? is this right
-							System.out.println("Success");
-						}*/
+
+
+					if (decryptedHash == digest){
+						System.out.println("fuck yea");
+					}
+
 
 				}
 
 				catch (Exception e){
 					System.err.println(e);
-				}
+				}*/
 
 				//dont really need below as we dont want to echo messages
 				/* If the message is private sent it to the given client. */

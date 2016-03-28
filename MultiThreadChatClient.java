@@ -80,8 +80,8 @@ public class MultiThreadChatClient implements Runnable{
 		//do crypto stuff here
 		Security.addProvider(new BouncyCastleProvider());
 		//message we are sending
-		String message = "This is what we want to encrypt!!!!!!!! Lol";
-		//String message = "This is what we want to encrypt!!!!!!!! Lol. we are now testing the zipping and want to ceajd hfvjh  dskhba dhsd jhsad ada dj adj adj da d ldkkf nhd fj df bfddf ankfdbj f ";
+		//String message = "Lol";
+		String message = "This is what we want to encrypt!!!!!!!! Lol. we are now testing the zipping and want to ceajd hfvjh  dskhba dhsd jhsad ada dj adj adj da d ldkkf nhd fj df bfddf ankfdbj f ";
 
 		//create hash of the message
 		byte[] digest = null;
@@ -263,8 +263,29 @@ public class MultiThreadChatClient implements Runnable{
 
 			//send off TODO
 			//fin is final packet
-			String lol = new String(fin);
-			os.println(lol);
+			String msg = new String(fin);
+			//System.out.println(lol);
+
+			//String msg = "line one\nline two";
+			/*for (int k = 0; k < msg.length; k++ ) {
+				if ()
+			}*/
+			//System.out.println("test");
+			int index = 0;
+			String edit = "";
+
+			System.out.println("***old " + msg);
+
+			while( (index = msg.indexOf("\n")) != -1){
+				edit += msg.substring(0,index);
+				edit += "nl_c";
+				edit += msg.substring(index+1,msg.length());
+				msg = edit;
+			}
+
+
+			System.out.println("***new " + edit);
+			os.println(edit);
 
 
 		}
