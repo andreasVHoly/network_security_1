@@ -143,7 +143,7 @@ public class MultiThreadChatClient implements Runnable{
 			outputStream.close();
 			System.out.println("Signed Message Size: " + signedMessage.length);
 
-			//zip the above TODO
+			//zip the above
 
 			byte[] output = new byte[1024];
 
@@ -179,7 +179,7 @@ public class MultiThreadChatClient implements Runnable{
 				System.out.print(op[j]+",");
 			}
 			System.out.println("\n");
-			//TODO put this on server side
+			// put this on server side
 
 			/*Inflater decompresser = new Inflater();
 			decompresser.setInput(op, 0, op.length);
@@ -209,7 +209,7 @@ public class MultiThreadChatClient implements Runnable{
 
 
 
-			//encrypt the zip with shared key TODO
+			//encrypt the zip with shared key
 
 			//create shared key
 			//PGPSecretKey
@@ -218,40 +218,36 @@ public class MultiThreadChatClient implements Runnable{
 	        secretKeyGen.init(128);
 	        SecretKey secretKey = secretKeyGen.generateKey();
 
+			SecretKeySpec k = new SecretKeySpec(secretKey, "AES");
+
 			//create cipher for encryption and encrypt zip\
 
 			byte[] encryptedPackage = null;
 			Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			aescipher.init(Cipher.ENCRYPT_MODE, secretKey);
+			aescipher.init(Cipher.ENCRYPT_MODE, k);
 			encryptedPackage = aescipher.doFinal(op);
 
 
-			//TODO get server key
-			// BufferedReader fileReader = new BufferedReader(new FileReader("server_public_key.txt"));
-			// String s = fileReader.readLine();  //read in the byte array from textfile
-			// fileReader.close();
-			// String[] byteRep = s.split("");
-			// for (int i = 0; i < byteRep.length; i++) {
-			// 	System.out.println(Byte.parseByte(byteRep[i]));
-			// }
-			// //Parse string into byte array
-			// byte[] bytes = new byte[10];//Byte.parseByte(s);
-			// System.out.println(s);
-			// System.out.println(bytes);
-			// FileInputStream fis = new FileInputStream("client_public_key.txt");
+			//TODO this needs to be sent written to files
+			//decrypt usage : c.init(Cipher.DECRYPT_MODE, key, new IVParameterSpec(iv));
+			byte[] iv = aescipher.getIV();
+
+
+			// get server key
+
 			Path path = Paths.get("server_public_key.txt");
 			byte [] SKey = Files.readAllBytes(path);
 
 			PublicKey KUS = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(SKey));
 
 
-			//encrypt shared key with public key of server TODO
+			//encrypt shared key with public key of server
 			byte[] encryptedKey = null;
 			Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			packet.init(Cipher.ENCRYPT_MODE, KUS); //TODO we need the public key of server here
 			encryptedKey = packet.doFinal(secretKey.getEncoded());
 
-			//concat the encrypyted shared key and the encrypted zip TODO
+			//concat the encrypyted shared key and the encrypted zip
 
 			ByteArrayOutputStream finalMessage = new ByteArrayOutputStream( );
 			finalMessage.write(encryptedKey);
@@ -261,7 +257,7 @@ public class MultiThreadChatClient implements Runnable{
 			finalMessage.close();
 
 
-			//send off TODO
+			//send off
 			//fin is final packet
 			String msg = new String(fin);
 			//System.out.println(lol);
@@ -299,10 +295,12 @@ public class MultiThreadChatClient implements Runnable{
 		* socket we have opened a connection to on the port portNumber .
 		*/
 		if(clientSocket != null && os != null && is != null){
+			System.out.println("fucking method kak is called");
 			try{
-				/* Create a thread to read from the server. */
-				new Thread (new MultiThreadChatClient()).start();
+				/* Create a thread to read from the server.
+				new Thread (new MultiThreadChatClient()).start();*/
 				while(!closed){
+					System.out.println(":::::"+inputLine.readLine().trim());
 					os.println(inputLine.readLine().trim());
 				}
 				/*
@@ -346,5 +344,5 @@ public class MultiThreadChatClient implements Runnable{
 	}
 
 
-	
+
 }
