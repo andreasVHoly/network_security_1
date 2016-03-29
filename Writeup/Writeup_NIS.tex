@@ -56,15 +56,44 @@ A writeup detailing the implementation details of our secure client-server syste
 We were tasked with creating a secure client-server communication system that implemented the practices laid out in PGP security. These practices are namely, message confidentiality and authentication. In this writeup, we document the implementation of these practices as well as detailing the choice of language the system is written in, the algorithms used, key management and finally communication connectivity model.
 %*********************************************************************************************************
 \section{Implementation}
-Implementation details here
+The process of providing message confidentiality and authentication, as laid out in PGP, is shown below and formed the basis for our implementation.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\linewidth]{PGP_Auth_Conf}
+\caption{The full PGP process}
+\label{fig:PGP_Auth_Conf}
+\end{figure}
+
+\subsection{Client}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\linewidth]{Client_Side}
+\caption{Encryption process done by the client}
+\label{fig:Client_Side}
+\end{figure}
+
+
+\subsection{Server}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\linewidth]{Server_Side}
+\caption{Decryption process done by the server}
+\label{fig:Server_Side}
+\end{figure}
+
 %*********************************************************************************************************
 \section{Choice of Language}
 Choice of Language here..
 %*********************************************************************************************************
 \section{Choice of Cryptographic Algorithms}
-Choice of crypto algorhtms here..
+The following cryptographic algorithms were implemented.
+
+\subsection{Key Generation}
+\subsubsection{Public/Private Key Pair}
+
 \subsection{Encryption}
-Encryption algs here..
+
 
 \subsection{Decryption}
 Decryption here...
