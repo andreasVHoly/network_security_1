@@ -18,6 +18,8 @@ import javax.crypto.*;//for crypto
 import java.security.*;//for crypto
 import java.security.spec.*;
 import javax.crypto.spec.*;
+
+
 //import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
@@ -30,7 +32,7 @@ public class MultiThreadChatClient{
 	//The client socket
 	private static Socket clientSocket = null;
 	// The output stream
-	private static OutputStreamWriter os = null;
+	private static DataOutputStream os = null;
 	// The input stream
 	private static DataInputStream is = null ;
 	private static BufferedReader inputLine = null;
@@ -66,7 +68,7 @@ public class MultiThreadChatClient{
 		try{
 			clientSocket = new Socket(host,portNumber);
 			inputLine = new BufferedReader(new InputStreamReader(System.in));
-			os = new PrintStream(clientSocket.getOutputStream());
+			os = new DataOutputStream(clientSocket.getOutputStream());
 			is = new DataInputStream(clientSocket.getInputStream());
 		}
 		catch(UnknownHostException e){
@@ -82,7 +84,7 @@ public class MultiThreadChatClient{
 		Security.addProvider(new BouncyCastleProvider());
 		//message we are sending
 		//String message = "Lol";
-		String message = "This is what we want to encrypt!!!!!!!! Lol. we are now testing the zipping and want to ceajd hfvjh  dskhba dhsd jhsad ada dj adj adj da d ldkkf nhd fj df bfddf ankfdbj f ";
+		String message = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
 
 		//create hash of the message
 		byte[] digest = null;
@@ -168,7 +170,7 @@ public class MultiThreadChatClient{
 
 			byte[] op = o.toByteArray();
 
-			System.out.println("legth of zip " + op.length);
+			/*System.out.println("legth of zip " + op.length);
 
 			System.out.println("\noriginal......................");
 
@@ -179,34 +181,8 @@ public class MultiThreadChatClient{
 			for (int j = 0;	j < op.length ; j++) {
 				System.out.print(op[j]+",");
 			}
-			System.out.println("\n");
-			// put this on server side
-
-			/*Inflater decompresser = new Inflater();
-			decompresser.setInput(op, 0, op.length);
-			byte[] result = new byte[1024];
-
-
-			ByteArrayOutputStream o2 = new ByteArrayOutputStream(signedMessage.length);
-			while(!decompresser.finished()){
-				int count = decompresser.inflate(result);
-				o2.write(result,0,count);
-			}
-			o2.close();
-			byte[] op2 = o2.toByteArray();
-			//int resultLength = decompresser.inflate(result);
-			decompresser.end();
-
-
-
-			System.out.println("\nDecompressed Message......................");
-
-
-			for (int j = 0;	j < op2.length ; j++) {
-				System.out.print(op2[j]+",");
-			}
-
 			System.out.println("\n");*/
+			// put this on server side
 
 
 
@@ -214,13 +190,18 @@ public class MultiThreadChatClient{
 
 			//create shared key
 			//PGPSecretKey
-
+			System.out.println("ENCRYPTING");
 			KeyGenerator secretKeyGen = KeyGenerator.getInstance("AES");
 	        secretKeyGen.init(128);
 	        SecretKey secretKey = secretKeyGen.generateKey();
 
 			SecretKeySpec k = new SecretKeySpec(secretKey.getEncoded(), "AES");
-
+			System.out.println("secret key length: " + secretKey.getEncoded().length);
+			System.out.println("secret spec key length: " + k.getEncoded().length);
+			for (int i = 0; i < secretKey.getEncoded().length;i++){
+				System.out.print(secretKey.getEncoded()[i]+",");
+			}
+			System.out.println("");
 			//create cipher for encryption and encrypt zip\
 
 			byte[] encryptedPackage = null;
@@ -229,9 +210,43 @@ public class MultiThreadChatClient{
 			encryptedPackage = aescipher.doFinal(op);
 
 
-			//TODO this needs to be sent written to files
+			System.out.println("ENCRYPTED PACKAGE");
+			for (int i = 0; i < encryptedPackage.length; i++){
+				System.out.print(encryptedPackage[i]+",");
+			}
+			System.out.println("");
+
+
+
+
+
 			//decrypt usage : c.init(Cipher.DECRYPT_MODE, key, new IVParameterSpec(iv));
 			byte[] iv = aescipher.getIV();
+
+			System.out.println("IV VECTOR");
+			for (int i = 0; i < iv.length; i++){
+				System.out.print(iv[i]+",");
+			}
+			System.out.println("");
+
+
+
+
+
+			FileOutputStream fos2 = new FileOutputStream("client_iv.txt");
+			fos2.write(iv);
+			fos2.close();
+
+			byte[] temp12 = null;
+			Cipher loli = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			loli.init(Cipher.DECRYPT_MODE, k, new IvParameterSpec(iv));
+			temp12 = loli.doFinal(encryptedPackage);
+
+
+
+			/*if (Arrays.equals(temp12,op)){
+				System.out.println("MATCH");
+			}*/
 
 
 			// get server key
@@ -270,8 +285,8 @@ public class MultiThreadChatClient{
 			//System.out.println("test");
 			int index = 0;
 			String edit = "";
-			System.out.println("WTF");
-			System.out.println("***old " + msg);
+			//System.out.println("WTF");
+			//System.out.println("***old " + msg);
 
 			/*while( (index = msg.indexOf("\n")) != -1){
 				edit += msg.substring(0,index);
@@ -281,8 +296,16 @@ public class MultiThreadChatClient{
 			}*/
 			//msg = "_start_" + msg + "_end_";
 
-			System.out.println("***new " + "_start_" + msg + "_end_");
-			os.println("_start_" + msg + "_end_");
+			/*System.out.println("***new " + "_start_" + msg + "_end_");
+			os.println("_start_" + msg + "_end_");*/
+
+			System.out.println("THIS IS THE SENT MESSAGE......................................");
+			System.out.println("Length: " + fin.length);
+			for (int i = 0; i < fin.length; i++){
+				System.out.print(fin[i]+",");
+			}
+			os.writeInt(fin.length);
+			os.write(fin);
 
 
 		}
@@ -295,18 +318,18 @@ public class MultiThreadChatClient{
 		* If every thing has been initialized then we want to write some data to the
 		* socket we have opened a connection to on the port portNumber .
 		*/
-		if(clientSocket != null && os != null && is != null){
+		/*if(clientSocket != null && os != null && is != null){
 			System.out.println("fucking method kak is called");
 			try{
 				/* Create a thread to read from the server.
-				new Thread (new MultiThreadChatClient()).start();*/
+				new Thread (new MultiThreadChatClient()).start();
 				while(!closed){
 					System.out.println(":::::"+inputLine.readLine().trim());
 					os.println(inputLine.readLine().trim());
 				}
 				/*
 				* Close the output stream , close the input stream, close the socket .
-				*/
+
 				os.close();
 				is.close();
 				clientSocket.close();
@@ -314,7 +337,7 @@ public class MultiThreadChatClient{
 			catch(IOException e){
 				System.err.println("IOException : " + e);
 			}
-		}
+		}*/
 	}
 
 }

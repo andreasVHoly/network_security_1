@@ -21,6 +21,7 @@ import javax.xml.bind.DatatypeConverter;
 import java.nio.file.*;
 import javax.crypto.spec.*;
 
+
 import java.util.*;
 //import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
@@ -107,7 +108,7 @@ class clientThread {
 
 	private String clientName = null;
 	private DataInputStream is = null;
-	private PrintStream os = null;
+	private DataOutputStream os = null;
 	private Socket clientSocket = null;
 	//private final clientThread[] threads;
 	//private int maxClientsCount;
@@ -131,7 +132,7 @@ class clientThread {
 			* Create input and output streams for this client.
 			*/
 			is = new DataInputStream(clientSocket.getInputStream());
-			os = new PrintStream(clientSocket.getOutputStream());
+			os = new DataOutputStream(clientSocket.getOutputStream());
 			String name = "user";
 
 
@@ -149,7 +150,8 @@ class clientThread {
 
 			/* Welcome the new the client. */
 			//os.println("Welcome " + name + " to our chat room.\nTo leave enter /quit in a new line.");
-			os.println("Connection with Server established");
+			String temp = "Connection with Server established";
+			os.write(temp.getBytes("UTF-8"));
 			System.out.println(name + " started a connection...");
 
 			PrivateKey KRS = null;
@@ -186,232 +188,23 @@ class clientThread {
 				}
 			}*/
 
-			ArrayList<String> packets = new ArrayList<String>();
-
-			/* Start the conversation . */
-			while(true){
-
-
-				//message received
-				String line = is.readLine();
-				System.out.println("Here comes the message from client:");
-				System.out.println("msg received " + line);
-				//we need to end connection
-
-				if (line.startsWith( "_start_")){
-					System.out.println("found start");
-					packets.add(line.substring(7));
-					line = line.substring(7);
-					System.out.println("found starte");
-					continue;
-				}
-
-				if (line.endsWith("_end_")){
-					System.out.println("found end");
-					packets.add(line.substring(0,line.length()-5));
-					System.out.println("found ende");
-					break;
-				}
-
-
-				packets.add(line);
-
-
-
-				/*int index = 0;
-				String edit = "";
-				while( (index = line.indexOf("nl_c")) != -1){
-					edit += line.substring(0,index);
-					edit += "\n";
-					edit += line.substring(index+4,line.length());
-					line = edit;
-				}*/
-
-
-
-				// /System.out.println("msg altered " + line);
-
-
-				//System.out.println(line);
-				if(line.startsWith( "/quit")){
-					break;
-				}
-
-
-				//line var holds the messages received from the client
-				/*try{
-					//do crypto stuff here
-					System.out.println("starting...");
-
-					Security.addProvider(new BouncyCastleProvider());
-
-					//GET CLEINT PUBLIC KEY KUC
-					Path path = Paths.get("client_public_key.txt");
-					byte [] CKey = Files.readAllBytes(path);
-					PublicKey KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(CKey));
-
-					System.out.println("public key gotten...");
-
-					//errything is in line
-					byte[] message = line.getBytes();
-					System.out.println(message);
-					//split up
-					byte[] keyPart = new byte[128];
-					byte[] crypPart = new byte[message.length];
-					for(int i = 0; i < 128; i++){
-						keyPart[i] = message[i];
-					}
-					System.out.println("message split intmediate...");
-					for(int j = 128, k = 0; j < message.length; j++, k++){
-						crypPart[k] = message[j];
-					}
-
-					System.out.println("message split...");
-
-					//CONFIDENTIALITY
-
-					//decrypt with the public key of client
-					byte[] encryptedKey = null;
-					Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-					packet.init(Cipher.DECRYPT_MODE, KRS);
-					encryptedKey = packet.doFinal(keyPart);
-
-					System.out.println("shared key decrypted...");
-					//decrypt shared key
-
-					SecretKey secretKey = new SecretKeySpec(encryptedKey, 0, encryptedKey.length, "AES");
-
-					System.out.println("shared key constructed...");
-					byte[] encryptedPackage = null;
-					Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-					aescipher.init(Cipher.DECRYPT_MODE, secretKey);
-					encryptedPackage = aescipher.doFinal(crypPart);
-
-
-					System.out.println("decrypted with shared key...");
-
-					//AUTHENTICAION
-
-
-					//
-
-
-					Inflater decompresser = new Inflater();
-					decompresser.setInput(encryptedPackage, 0, encryptedPackage.length);
-					byte[] result = new byte[1024];
-
-
-					ByteArrayOutputStream o2 = new ByteArrayOutputStream(encryptedPackage.length);
-					while(!decompresser.finished()){
-						int count = decompresser.inflate(result);
-						o2.write(result,0,count);
-					}
-					o2.close();
-					byte[] op2 = o2.toByteArray();
-					decompresser.end();
-					System.out.println("unzipped...");
-
-					//op2 is decompressed message
-					byte[] sigPart = new byte[128];
-					byte[] messagePart = new byte[op2.length-128];
-					for(int i = 0; i < 128; i++){
-						sigPart[i] = op2[i];
-					}
-
-					for(int j = 128, k = 0; j < op2.length; j++, k++){
-						messagePart[k] = op2[j];
-					}
-
-					System.out.println("split message again...");
-
-					String origMessage = new String(messagePart);
-					System.out.println("message reads: " + origMessage );
-					//create hash of the message
-
-					byte[] digest = null;
-					MessageDigest md = MessageDigest.getInstance("SHA-256");
-					md.update(messagePart);
-					digest = md.digest();
-
-					System.out.println("own hash created...");
-
-
-					//sign hash with private key
-					byte[] decryptedHash = null;
-					Cipher hashCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-					hashCipher.init(Cipher.DECRYPT_MODE, KUC);
-					decryptedHash = hashCipher.doFinal(sigPart);
-
-
-
-
-					if (decryptedHash == digest){
-						System.out.println("fuck yea");
-					}
-
-
-				}
-
-				catch (Exception e){
-					System.err.println(e);
-				}*/
-
-				//dont really need below as we dont want to echo messages
-				/* If the message is private sent it to the given client. */
-			/*	if(line.startsWith("@")){
-					String[]words = line.split("\\s", 2);
-					if(words.length > 1 && words[1] != null){
-						words[1] = words[1].trim();
-						if(!words[1].isEmpty()){
-							synchronized(this){
-								for(int i = 0; i < maxClientsCount; i++){
-									if(threads[i] != null && threads[i] != this && threads[i].clientName != null && threads[i].clientName.equals(words[0])){
-											threads[i].os.println("< " + name + "> " + words[1]);
-
-											//Echo this message to let the client know the private message was sent .
-
-
-											this.os.println("> "+ name + "> " + words[1]);
-											break;
-									}
-								}
-							}
-						}
-					}
-				}
-
-				//we will work in public domain, won't use the private chat function
-				else{
-					//The message is public , broadcast it to all other clients .
-
-					synchronized(this){
-						for(int i = 0; i < maxClientsCount; i++){
-							if(threads[i] != null && threads[i].clientName != null){
-								//this is where we ouput --> line is the data we sent from client
-								threads[i].os.println("< " + name + "> " + line);
-							}
-						}
-					}
-				}*/
+			int msgLength = is.readInt();
+			System.out.println("Length: " + msgLength);
+			byte[] message = null;
+			if (msgLength >0){
+				message = new byte[msgLength];
+				is.readFully(message, 0, message.length);
 			}
-
-
-			System.out.println("edited content");
-			String line1 = "";
-			for(int l = 0; l < packets.size(); l++){
-				line1 += packets.get(l);
-				if (!(l == packets.size()-1)){
-					line1 += "\n";
-				}
+			System.out.println("THIS IS THE RECEIVED MESSAGE......................................");
+			for (int i = 0; i < msgLength; i++){
+				System.out.print(message[i]+",");
 			}
-			System.out.println(line1);
-
 
 
 			//line var holds the messages received from the client
 			try{
 				//do crypto stuff here
-				/*System.out.println("starting...");
+				System.out.println("starting...");
 
 				Security.addProvider(new BouncyCastleProvider());
 
@@ -423,11 +216,11 @@ class clientThread {
 				System.out.println("public key gotten...");
 
 				//errything is in line
-				byte[] message = line1.getBytes("UTF-8");
-				System.out.println(message);
+				/*byte[] message = line1.getBytes("UTF-8");
+				System.out.println(message);*/
 				//split up
 				byte[] keyPart = new byte[128];
-				byte[] crypPart = new byte[message.length];
+				byte[] crypPart = new byte[message.length-128];
 				for(int i = 0; i < 128; i++){
 					keyPart[i] = message[i];
 				}
@@ -450,11 +243,33 @@ class clientThread {
 				//decrypt shared key
 
 				SecretKey secretKey = new SecretKeySpec(encryptedKey, 0, encryptedKey.length, "AES");
-
+				SecretKeySpec sk = new SecretKeySpec(secretKey.getEncoded(), "AES");
 				System.out.println("shared key constructed...");
+
+				Path path2 = Paths.get("client_iv.txt");
+				byte[] iv = Files.readAllBytes(path2);
+
+				System.out.println("IV VECTOR");
+				for (int i = 0; i < iv.length; i++){
+					System.out.print(iv[i]+",");
+				}
+
+				System.out.println("secret key length: " + secretKey.getEncoded().length);
+				System.out.println("secret key spec length: " + sk.getEncoded().length);
+				for (int i = 0; i < secretKey.getEncoded().length;i++){
+					System.out.print(secretKey.getEncoded()[i]+",");
+				}
+				System.out.println("");
+
+				System.out.println("ENCRYPTED PACKAGE");
+				for (int i = 0; i < crypPart.length; i++){
+					System.out.print(crypPart[i]+",");
+				}
+				System.out.println("");
+
 				byte[] encryptedPackage = null;
 				Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-				aescipher.init(Cipher.DECRYPT_MODE, secretKey);
+				aescipher.init(Cipher.DECRYPT_MODE, sk, new IvParameterSpec(iv));
 				encryptedPackage = aescipher.doFinal(crypPart);
 
 
@@ -515,9 +330,9 @@ class clientThread {
 
 
 
-				if (decryptedHash == digest){
+				if (Arrays.equals(decryptedHash,digest)){
 					System.out.println("fuck yea");
-				}*/
+				}
 
 
 			}
@@ -538,7 +353,8 @@ class clientThread {
 					}
 				}
 			}*/
-			os.println("Connection with Server ended");
+			//os.write("Connection with Server ended");
+
 			//os.println( "* * * Bye " + name + " * * * ");
 			/*
 			* Clean up . Set the current thread variable to null so that a new client
