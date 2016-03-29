@@ -39,8 +39,8 @@ public class MultiThreadChatServerSync{
 	private static Socket clientSocket = null;
 
 	// This chatserver can accept up to maxClientsCount clients ’ connections .
-	private static final int maxClientsCount = 10;
-	private static final clientThread[] threads = new clientThread[maxClientsCount];
+	//private static final int maxClientsCount = 10;
+	//private static final clientThread[] threads = new clientThread[maxClientsCount];
 
 
 	public static void main(String args[]){
@@ -67,22 +67,24 @@ public class MultiThreadChatServerSync{
 		* Create a client socket for each connection and pass it to a new client
 		* thread .
 		*/
+		clientThread client = null;
 		while(true){
 			try{
 				clientSocket = serverSocket.accept();
-				int i = 0;
-				for(i = 0; i<maxClientsCount; i++){
+				client = new clientThread(clientSocket);
+				//int i = 0;
+				/*for(i = 0; i<maxClientsCount; i++){
 					if(threads[i] == null){
-						(threads[i] = new clientThread(clientSocket, threads)).start();
+						new clientThread(clientSocket);
 						break;
 					}
-				}
-				if(i == maxClientsCount){
+				}*/
+				/*if(i == maxClientsCount){
 					PrintStream os = new PrintStream(clientSocket.getOutputStream());
 					os.println("Server too busy. Try later.");
 					os.close();
 					clientSocket.close();
-				}
+				}*/
 			}
 			catch(IOException e){
 				System.out.println("IOException Error" + e);
@@ -101,28 +103,29 @@ public class MultiThreadChatServerSync{
 * routes the private message to the particular client . When a client leaves the
 * chat room this thread informs all the clients about that and terminates.
 */
-class clientThread extends Thread{
+class clientThread {
 
 	private String clientName = null;
 	private DataInputStream is = null;
 	private PrintStream os = null;
 	private Socket clientSocket = null;
-	private final clientThread[] threads;
-	private int maxClientsCount;
+	//private final clientThread[] threads;
+	//private int maxClientsCount;
 	private InetAddress address;//address that holds the IP
 
 
-	public clientThread(Socket clientSocket, clientThread[] threads){
+	public clientThread(Socket clientSocket){
 		this.clientSocket = clientSocket;
 		this.address = this.clientSocket.getInetAddress();//get the address from the connecting client
-		this.threads = threads;
-		maxClientsCount = threads.length;
+		//this.threads = threads;
+		//.maxClientsCount = threads.length;
+		startThis();
 	}
 
 
-	public void run(){
-		int maxClientsCount = this.maxClientsCount;
-		clientThread[] threads = this.threads;
+	public void startThis(){
+		//int maxClientsCount = this.maxClientsCount;
+		//clientThread[] threads = this.threads;
 		try{
 			/*
 			* Create input and output streams for this client.
@@ -169,7 +172,7 @@ class clientThread extends Thread{
 				System.out.println("Exception" + e);
 			}
 
-			synchronized(this){
+			/*synchronized(this){
 				for(int i = 0; i < maxClientsCount; i++){
 					if(threads[i] != null &&  threads[i] == this){
 						clientName = "@" + name;
@@ -181,7 +184,7 @@ class clientThread extends Thread{
 						threads[i].os.println("* * * A new user " + name + " with address " + address + " entered the chat room!!! * * *");
 					}
 				}
-			}
+			}*/
 
 			ArrayList<String> packets = new ArrayList<String>();
 
@@ -367,7 +370,7 @@ class clientThread extends Thread{
 
 											//Echo this message to let the client know the private message was sent .
 
-											//TODO
+
 											this.os.println("> "+ name + "> " + words[1]);
 											break;
 									}
@@ -380,7 +383,7 @@ class clientThread extends Thread{
 				//we will work in public domain, won't use the private chat function
 				else{
 					//The message is public , broadcast it to all other clients .
-					//TODO
+
 					synchronized(this){
 						for(int i = 0; i < maxClientsCount; i++){
 							if(threads[i] != null && threads[i].clientName != null){
@@ -397,15 +400,18 @@ class clientThread extends Thread{
 			String line1 = "";
 			for(int l = 0; l < packets.size(); l++){
 				line1 += packets.get(l);
-				//System.out.println(packets.get(l) + " **" + l + "**");
+				if (!(l == packets.size()-1)){
+					line1 += "\n";
+				}
 			}
+			System.out.println(line1);
 
 
 
 			//line var holds the messages received from the client
 			try{
 				//do crypto stuff here
-				System.out.println("starting...");
+				/*System.out.println("starting...");
 
 				Security.addProvider(new BouncyCastleProvider());
 
@@ -511,7 +517,7 @@ class clientThread extends Thread{
 
 				if (decryptedHash == digest){
 					System.out.println("fuck yea");
-				}
+				}*/
 
 
 			}
@@ -525,26 +531,26 @@ class clientThread extends Thread{
 
 
 
-			synchronized(this){
+			/*synchronized(this){
 				for(int i = 0; i < maxClientsCount; i++){
 					if(threads[i] != null && threads[i] != this && threads[i].clientName != null){
 						threads[i].os.println( "* * * The user " + name + " is leaving the chat room!!! * * *");
 					}
 				}
-			}
+			}*/
 			os.println("Connection with Server ended");
 			//os.println( "* * * Bye " + name + " * * * ");
 			/*
 			* Clean up . Set the current thread variable to null so that a new client
 			* could be accepted by the server .
 			*/
-			synchronized(this){
+			/*synchronized(this){
 				for(int i = 0; i < maxClientsCount; i++){
 					if(threads[i] == this){
 						threads[i] = null;
 					}
 				}
-			}
+			}*/
 
 			/*
 			* close the output stream , close the input stream , close the socket .

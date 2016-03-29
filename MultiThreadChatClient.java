@@ -17,6 +17,7 @@ import java.util.zip.*;//for zipping
 import javax.crypto.*;//for crypto
 import java.security.*;//for crypto
 import java.security.spec.*;
+import javax.crypto.spec.*;
 //import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
@@ -25,11 +26,11 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 
 
-public class MultiThreadChatClient implements Runnable{
+public class MultiThreadChatClient{
 	//The client socket
 	private static Socket clientSocket = null;
 	// The output stream
-	private static PrintStream os = null;
+	private static OutputStreamWriter os = null;
 	// The input stream
 	private static DataInputStream is = null ;
 	private static BufferedReader inputLine = null;
@@ -137,7 +138,7 @@ public class MultiThreadChatClient implements Runnable{
 
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 			outputStream.write(encryptedHash);
-			outputStream.write(message.getBytes());
+			outputStream.write(message.getBytes("UTF-8"));
 
 			signedMessage = outputStream.toByteArray();
 			outputStream.close();
@@ -218,7 +219,7 @@ public class MultiThreadChatClient implements Runnable{
 	        secretKeyGen.init(128);
 	        SecretKey secretKey = secretKeyGen.generateKey();
 
-			SecretKeySpec k = new SecretKeySpec(secretKey, "AES");
+			SecretKeySpec k = new SecretKeySpec(secretKey.getEncoded(), "AES");
 
 			//create cipher for encryption and encrypt zip\
 
@@ -269,7 +270,7 @@ public class MultiThreadChatClient implements Runnable{
 			//System.out.println("test");
 			int index = 0;
 			String edit = "";
-
+			System.out.println("WTF");
 			System.out.println("***old " + msg);
 
 			/*while( (index = msg.indexOf("\n")) != -1){
@@ -315,34 +316,5 @@ public class MultiThreadChatClient implements Runnable{
 			}
 		}
 	}
-
-
-	/*
-	* Create a thread to read from the server.(Javadoc )
-	*
-	* @see java.lang.Runnable#run( )
-	*/
-	public void run(){
-
-		/*
-		* Keep on reading from the socket till we receive from the
-		* server. Once we received that then we want to break.
-		*/
-		String responseLine;
-		try{
-			while((responseLine = is.readLine()) != null){
-				System.out.println(responseLine);
-				if(responseLine.indexOf( "* * * Bye ") != -1){
-					break;
-				}
-			}
-			closed = true;
-		}
-		catch(IOException e){
-			System.err.println("IOException : " + e);
-		}
-	}
-
-
 
 }
