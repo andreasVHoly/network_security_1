@@ -46,21 +46,6 @@ public class MultiThreadChatClient{
 		// The default host.
 		String host = "localhost";
 
-		//took below out to make straight connection
-		//Scanner in = new Scanner(System.in);
-		//System.out.println("Please enter your desired IP address: ");
-
-		/*if(!host.equals("")){
-			host = in.nextLine();
-		}
-		if(args.length < 2){
-			System.out.println("Usage: java MultiThreadChatClient <host> <portNumber>\n"+ "Now using host= " + host + ", portNumber= "+ portNumber);
-		}
-		else{
-			host = args[0];
-			portNumber = Integer.valueOf(args[1]).intValue();
-		}*/
-
 
 		/*
 		* Open a socket on a given host and port. Open input and output streams .
@@ -68,6 +53,7 @@ public class MultiThreadChatClient{
 		try{
 			clientSocket = new Socket(host,portNumber);
 			inputLine = new BufferedReader(new InputStreamReader(System.in));
+			//use these below to allow passing byte arrays
 			os = new DataOutputStream(clientSocket.getOutputStream());
 			is = new DataInputStream(clientSocket.getInputStream());
 		}
@@ -80,128 +66,155 @@ public class MultiThreadChatClient{
 
 
 
-		//do crypto stuff here
+		//adding bouncy castle provider
 		Security.addProvider(new BouncyCastleProvider());
-		//message we are sending
-		//String message = "Lol";
+		//default message
 		String message = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
 
-		//create hash of the message
-		byte[] digest = null;
-		byte[] signedMessage = null;
+
+		//get input from the user to get a message to decrypt
+		Scanner in = new Scanner(System.in);
+		System.out.println("Please enter a message to encrypt: ");
+		if(!host.equals("")){
+			message = in.nextLine();
+		}
+
+
 		try{
+
+			//CREATE A HASH OF THE MESSAGE
+			System.out.println("_.:SETTING UP AUTHENTICATION:._");
+			byte[] digest = null;
+			byte[] signedMessage = null;
+
+			System.out.println("\t.:CREATING MESSAGE DIGEST:.");
+			System.out.println("\t\tOriginal Message: " + message);
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.update(message.getBytes("UTF-8"));
 			digest = md.digest();
+			int mdValue = 0;
+			for (int i = 0; i < digest.length; i++){
+				mdValue += digest[i];
+			}
 
-			System.out.println("Digest Size: " + digest.length);
+			System.out.println("\t\tMessage Digest Summation: " + mdValue);
+
+			System.out.println("\t\tMessage Digest Size: " + digest.length);
 
 			//create private and public keys for client
-
+			System.out.println("\t.:CREATING PRIVATE AND PUBLIC KEY PAIR:.");
 			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 			keyGen.initialize(1024);
 			KeyPair keys = keyGen.generateKeyPair();
 
+			//get the key from the generator
 			PrivateKey KRC = keys.getPrivate();
 			PublicKey KUC = keys.getPublic();
+
+			//convert to bytes
 			byte[] KUCArray = KUC.getEncoded();
 
+			//for printing
+			int count1 = 0;
+			for (int i = 0; i < KUCArray.length; i++){
+				count1 += KUCArray[i];
+			}
+			System.out.println("\t\tPublic Key Summation: " + count1);
+
+			System.out.println("\t\tWriting Public Key to file \"client_public_key.txt\"");
+			//write out the public key to a file
 			FileOutputStream fos = new FileOutputStream("client_public_key.txt");
 			fos.write(KUCArray);
 			fos.close();
 
-			// //Write client public key to file for Server
-			// BufferedWriter fileWriter = new BufferedWriter(new FileWriter("client_public_key.txt"));
-			//
-			// for (int i = 0; i < KUCArray.length; i++) {
-			// 	fileWriter.write(KUCArray[i]);
-			// }
-			// fileWriter.close();
 
+			System.out.println("\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
+
+			System.out.println("\t\tEncrypting Hash with Private Key");
 			//sign hash with private key
 			byte[] encryptedHash = null;
 			Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			RSAcipher.init(Cipher.ENCRYPT_MODE, KRC);
 			encryptedHash = RSAcipher.doFinal(digest);
 
+			int count2 = 0;
+			for (int i = 0; i < encryptedHash.length; i++){
+				count2 += encryptedHash[i];
+			}
 
-			//String privateKey = new String(Base64.encodeBase64(KRC.getEncoded(), 0,KRC.getEncoded().length, Base64.NO_WRAP));
-			//String publicKey = new String(Base64.encode(KUC.getEncoded(), 0,KUC.getEncoded().length, Base64.NO_WRAP));
-			System.out.println("Signed Hash Size: " + encryptedHash.length);
-			System.out.println("Client Private Key Algorithm " + KRC.getAlgorithm());
-			System.out.println("Client Private Key " + KRC);
-			System.out.println("Client Public Key Algorithm " + KUC.getAlgorithm());
-			System.out.println("Client Public Key " + KUC);
-
+			System.out.println("\t\tEncrypted Hash Summation: " + count2);
 
 			//concantenate hash and original message
-			//signedMessage = encryptedHash + message.getBytes();
-
-
+			System.out.println("\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+			//add signature
 			outputStream.write(encryptedHash);
+			//add message
 			outputStream.write(message.getBytes("UTF-8"));
-
+			//concat
 			signedMessage = outputStream.toByteArray();
 			outputStream.close();
-			System.out.println("Signed Message Size: " + signedMessage.length);
 
+			int count3 = 0;
+			for (int i = 0; i < signedMessage.length; i++){
+				count3 += signedMessage[i];
+			}
+			System.out.println("\t\tAthenticated Packet Summation: " + count3);
+
+			System.out.println("\t.:COMPRESSING AUTHENTICATED PACKET:.");
 			//zip the above
 
+			//using chunks of 1024 bytes
 			byte[] output = new byte[1024];
-
+			//create defalter
 			Deflater compress = new Deflater();
 			compress.setInput(signedMessage);
+			//use byte array to avoid running out of space
 			ByteArrayOutputStream o = new ByteArrayOutputStream(signedMessage.length);
 			compress.finish();
 
-			//this could break because we might have more data
-			int zipLen = 0;
-			int initSize = 100;
+			//create zip
 			while(!compress.finished()){
 				int count = compress.deflate(output);
 				o.write(output,0,count);
 			}
 			o.close();
-			/*if((zipLen = compress.deflate(output)) == 0){
-				System.out.println("FOK");
-			}*/
 			compress.end();
 
+			//zipped message
 			byte[] op = o.toByteArray();
 
-			/*System.out.println("legth of zip " + op.length);
-
-			System.out.println("\noriginal......................");
-
-			for (int i = 0;	i < signedMessage.length ; i++) {
-				System.out.print(signedMessage[i]+",");
+			int count4 = 0;
+			for (int i = 0; i < op.length; i++){
+				count4 += op[i];
 			}
-			System.out.println("\nzipped data......................");
-			for (int j = 0;	j < op.length ; j++) {
-				System.out.print(op[j]+",");
-			}
-			System.out.println("\n");*/
-			// put this on server side
+			System.out.println("\t\tCompressed Packet Summation: " + count4);
+
+			System.out.println("_.:AUTHENTICATION COMPLETE:._");
+			System.out.println("_.:SETTING UP CONFIDENTIALITY:._");
+
 
 
 
 			//encrypt the zip with shared key
 
 			//create shared key
-			//PGPSecretKey
-			System.out.println("ENCRYPTING");
+			System.out.println("\t.:CREATING SHARED KEY:.");
 			KeyGenerator secretKeyGen = KeyGenerator.getInstance("AES");
 	        secretKeyGen.init(128);
+			//GET KEY
 	        SecretKey secretKey = secretKeyGen.generateKey();
-
+			//new key spec
 			SecretKeySpec k = new SecretKeySpec(secretKey.getEncoded(), "AES");
-			System.out.println("secret key length: " + secretKey.getEncoded().length);
-			System.out.println("secret spec key length: " + k.getEncoded().length);
-			for (int i = 0; i < secretKey.getEncoded().length;i++){
-				System.out.print(secretKey.getEncoded()[i]+",");
+
+			int count5 = 0;
+			for (int i = 0; i < secretKey.getEncoded().length; i++){
+				count5 += secretKey.getEncoded()[i];
 			}
-			System.out.println("");
+			System.out.println("\t\tShared Key Summation: " + count5);
+
+
+			System.out.println("\t.:ENCRYPTING COMPRESSED PACKET WITH SHARED KEY:.");
 			//create cipher for encryption and encrypt zip\
 
 			byte[] encryptedPackage = null;
@@ -210,45 +223,30 @@ public class MultiThreadChatClient{
 			encryptedPackage = aescipher.doFinal(op);
 
 
-			System.out.println("ENCRYPTED PACKAGE");
+			int count5 = 0;
 			for (int i = 0; i < encryptedPackage.length; i++){
-				System.out.print(encryptedPackage[i]+",");
+				count5 += encryptedPackage[i];
 			}
-			System.out.println("");
+			System.out.println("\t\tEncrypted Compressed Packet Summation: " + count5);
 
+			System.out.println("\t\tExtracting the IV for decryption");
 
-
-
-
-			//decrypt usage : c.init(Cipher.DECRYPT_MODE, key, new IVParameterSpec(iv));
+			//get iv from cipher
 			byte[] iv = aescipher.getIV();
 
-			System.out.println("IV VECTOR");
+			int count6 = 0;
 			for (int i = 0; i < iv.length; i++){
-				System.out.print(iv[i]+",");
+				count6 += iv[i];
 			}
-			System.out.println("");
-
-
-
-
-
+			System.out.println("\t\tIV summation: " + count6);
+			//write iv to a file
+			System.out.println("\t\tWriting IV to file \"client_iv.txt\"");
 			FileOutputStream fos2 = new FileOutputStream("client_iv.txt");
 			fos2.write(iv);
 			fos2.close();
 
-			byte[] temp12 = null;
-			Cipher loli = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			loli.init(Cipher.DECRYPT_MODE, k, new IvParameterSpec(iv));
-			temp12 = loli.doFinal(encryptedPackage);
 
-
-
-			/*if (Arrays.equals(temp12,op)){
-				System.out.println("MATCH");
-			}*/
-
-
+			System.out.println("\t.:ENCRYPTING SHARED KEY WITH SEVERS PUBLIC KEY:.");
 			// get server key
 
 			Path path = Paths.get("server_public_key.txt");
