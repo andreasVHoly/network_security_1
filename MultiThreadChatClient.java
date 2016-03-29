@@ -87,7 +87,7 @@ public class MultiThreadChatClient{
 			byte[] digest = null;
 			byte[] signedMessage = null;
 
-			System.out.println("\t.:CREATING MESSAGE DIGEST:.");
+			System.out.println("\n\t.:CREATING MESSAGE DIGEST:.");
 			System.out.println("\t\tOriginal Message: " + message);
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.update(message.getBytes("UTF-8"));
@@ -102,7 +102,7 @@ public class MultiThreadChatClient{
 			System.out.println("\t\tMessage Digest Size: " + digest.length);
 
 			//create private and public keys for client
-			System.out.println("\t.:CREATING PRIVATE AND PUBLIC KEY PAIR:.");
+			System.out.println("\n\t.:CREATING PRIVATE AND PUBLIC KEY PAIR:.");
 			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 			keyGen.initialize(1024);
 			KeyPair keys = keyGen.generateKeyPair();
@@ -128,7 +128,7 @@ public class MultiThreadChatClient{
 			fos.close();
 
 
-			System.out.println("\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
+			System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
 
 			System.out.println("\t\tEncrypting Hash with Private Key");
 			//sign hash with private key
@@ -145,7 +145,7 @@ public class MultiThreadChatClient{
 			System.out.println("\t\tEncrypted Hash Summation: " + count2);
 
 			//concantenate hash and original message
-			System.out.println("\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
+			System.out.println("\n\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 			//add signature
 			outputStream.write(encryptedHash);
@@ -161,7 +161,7 @@ public class MultiThreadChatClient{
 			}
 			System.out.println("\t\tAthenticated Packet Summation: " + count3);
 
-			System.out.println("\t.:COMPRESSING AUTHENTICATED PACKET:.");
+			System.out.println("\n\t.:COMPRESSING AUTHENTICATED PACKET:.");
 			//zip the above
 
 			//using chunks of 1024 bytes
@@ -190,8 +190,8 @@ public class MultiThreadChatClient{
 			}
 			System.out.println("\t\tCompressed Packet Summation: " + count4);
 
-			System.out.println("_.:AUTHENTICATION COMPLETE:._");
-			System.out.println("_.:SETTING UP CONFIDENTIALITY:._");
+			System.out.println("\n_.:AUTHENTICATION COMPLETE:._");
+			System.out.println("\n\n_.:SETTING UP CONFIDENTIALITY:._");
 
 
 
@@ -199,7 +199,7 @@ public class MultiThreadChatClient{
 			//encrypt the zip with shared key
 
 			//create shared key
-			System.out.println("\t.:CREATING SHARED KEY:.");
+			System.out.println("\n\t.:CREATING SHARED KEY:.");
 			KeyGenerator secretKeyGen = KeyGenerator.getInstance("AES");
 	        secretKeyGen.init(128);
 			//GET KEY
@@ -214,7 +214,7 @@ public class MultiThreadChatClient{
 			System.out.println("\t\tShared Key Summation: " + count5);
 
 
-			System.out.println("\t.:ENCRYPTING COMPRESSED PACKET WITH SHARED KEY:.");
+			System.out.println("\n\t.:ENCRYPTING COMPRESSED PACKET WITH SHARED KEY:.");
 			//create cipher for encryption and encrypt zip\
 
 			byte[] encryptedPackage = null;
@@ -223,22 +223,22 @@ public class MultiThreadChatClient{
 			encryptedPackage = aescipher.doFinal(op);
 
 
-			int count5 = 0;
+			int count6 = 0;
 			for (int i = 0; i < encryptedPackage.length; i++){
-				count5 += encryptedPackage[i];
+				count6 += encryptedPackage[i];
 			}
-			System.out.println("\t\tEncrypted Compressed Packet Summation: " + count5);
+			System.out.println("\t\tEncrypted Compressed Packet Summation: " + count6);
 
 			System.out.println("\t\tExtracting the IV for decryption");
 
 			//get iv from cipher
 			byte[] iv = aescipher.getIV();
 
-			int count6 = 0;
+			int count7 = 0;
 			for (int i = 0; i < iv.length; i++){
-				count6 += iv[i];
+				count7 += iv[i];
 			}
-			System.out.println("\t\tIV summation: " + count6);
+			System.out.println("\t\tIV summation: " + count7);
 			//write iv to a file
 			System.out.println("\t\tWriting IV to file \"client_iv.txt\"");
 			FileOutputStream fos2 = new FileOutputStream("client_iv.txt");
@@ -246,64 +246,59 @@ public class MultiThreadChatClient{
 			fos2.close();
 
 
-			System.out.println("\t.:ENCRYPTING SHARED KEY WITH SEVERS PUBLIC KEY:.");
-			// get server key
-
+			System.out.println("\n\t.:ENCRYPTING SHARED KEY WITH SERVERS PUBLIC KEY:.");
+			// get server key from file
+			System.out.println("\t\tReading in public key from file \"server_public_key.txt\"");
 			Path path = Paths.get("server_public_key.txt");
-			byte [] SKey = Files.readAllBytes(path);
+			byte[] SKey = Files.readAllBytes(path);
 
+			//create server key from bytes
 			PublicKey KUS = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(SKey));
 
-
+			System.out.println("\t\tEncrypting shared key with Servers Public Key");
 			//encrypt shared key with public key of server
 			byte[] encryptedKey = null;
 			Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			packet.init(Cipher.ENCRYPT_MODE, KUS); //TODO we need the public key of server here
+			packet.init(Cipher.ENCRYPT_MODE, KUS);
 			encryptedKey = packet.doFinal(secretKey.getEncoded());
 
+			int count8 = 0;
+			for (int i = 0; i < encryptedKey.length; i++){
+				count8 += encryptedKey[i];
+			}
+			System.out.println("\t\tEncrypted Shared Key summation: " + count8);
+
+
+			System.out.println("\n\t.:CONCATENATING ENCRYPTED SHARED KEY AND ENCRYPTED PACKAGE:.");
 			//concat the encrypyted shared key and the encrypted zip
 
 			ByteArrayOutputStream finalMessage = new ByteArrayOutputStream( );
 			finalMessage.write(encryptedKey);
 			finalMessage.write(encryptedPackage);
-			System.out.println("Key size " + encryptedKey.length);
 			byte[] fin = finalMessage.toByteArray();
 			finalMessage.close();
 
-
-			//send off
-			//fin is final packet
-			String msg = new String(fin);
-			//System.out.println(lol);
-
-			//String msg = "line one\nline two\nl3\nl4";
-			/*for (int k = 0; k < msg.length; k++ ) {
-				if ()
-			}*/
-			//System.out.println("test");
-			int index = 0;
-			String edit = "";
-			//System.out.println("WTF");
-			//System.out.println("***old " + msg);
-
-			/*while( (index = msg.indexOf("\n")) != -1){
-				edit += msg.substring(0,index);
-				edit += "nl_c";
-				edit += msg.substring(index+1,msg.length());
-				msg = edit;
-			}*/
-			//msg = "_start_" + msg + "_end_";
-
-			/*System.out.println("***new " + "_start_" + msg + "_end_");
-			os.println("_start_" + msg + "_end_");*/
-
-			System.out.println("THIS IS THE SENT MESSAGE......................................");
-			System.out.println("Length: " + fin.length);
+			int count9 = 0;
 			for (int i = 0; i < fin.length; i++){
-				System.out.print(fin[i]+",");
+				count9 += fin[i];
 			}
+			System.out.println("\t\tEncrypted Packet summation: " + count9);
+
+
+			System.out.println("\n_.:CONFIDENTIALITY COMPLETE:._");
+			System.out.println("\n\n_.:SENDING MESSAGE TO SERVER:._");
+			//send off
+			System.out.println("\t\tFinal Packet Size: " + fin.length);
+			int count10 = 0;
+			for (int i = 0; i < fin.length; i++){
+				count10 += fin[i];
+			}
+			System.out.println("\t\tFinal Packet summation: " + count10);
+
+
 			os.writeInt(fin.length);
 			os.write(fin);
+			System.out.println("_.:MESSAGE SENT TO SERVER:._");
 
 
 		}
@@ -311,31 +306,6 @@ public class MultiThreadChatClient{
 			System.err.println(e);
 		}
 		//end
-
-		/*
-		* If every thing has been initialized then we want to write some data to the
-		* socket we have opened a connection to on the port portNumber .
-		*/
-		/*if(clientSocket != null && os != null && is != null){
-			System.out.println("fucking method kak is called");
-			try{
-				/* Create a thread to read from the server.
-				new Thread (new MultiThreadChatClient()).start();
-				while(!closed){
-					System.out.println(":::::"+inputLine.readLine().trim());
-					os.println(inputLine.readLine().trim());
-				}
-				/*
-				* Close the output stream , close the input stream, close the socket .
-
-				os.close();
-				is.close();
-				clientSocket.close();
-			}
-			catch(IOException e){
-				System.err.println("IOException : " + e);
-			}
-		}*/
 	}
 
 }
