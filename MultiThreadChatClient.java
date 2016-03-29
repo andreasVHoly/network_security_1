@@ -6,27 +6,18 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
-
-
 //newly added
 import java.io.*;
 import javax.xml.bind.DatatypeConverter;
 import java.nio.file.*;
-
 import java.util.zip.*;//for zipping
 import javax.crypto.*;//for crypto
 import java.security.*;//for crypto
 import java.security.spec.*;
 import javax.crypto.spec.*;
-
-
-//import org.apache.commons.codec.digest.*;//for hashing
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-
-
 
 public class MultiThreadChatClient{
 	//The client socket
@@ -64,7 +55,7 @@ public class MultiThreadChatClient{
 			System.err.println("Couldn't get I/O for the connection to the host "+ host);
 		}
 
-
+		System.out.println("_.:CONNECTION TO SERVER ESTABLISHED AT localhost:2222:._\n");
 
 		//adding bouncy castle provider
 		Security.addProvider(new BouncyCastleProvider());
@@ -88,7 +79,7 @@ public class MultiThreadChatClient{
 			byte[] signedMessage = null;
 
 			System.out.println("\n\t.:CREATING MESSAGE DIGEST:.");
-			System.out.println("\t\tOriginal Message: " + message);
+			System.out.println("\t\tPlaintext: " + message);
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.update(message.getBytes("UTF-8"));
 			digest = md.digest();
@@ -300,7 +291,7 @@ public class MultiThreadChatClient{
 			os.write(fin);
 			System.out.println("_.:MESSAGE SENT TO SERVER:._");
 
-
+			System.out.println("\n_.:CONNECTION TO SERVER CLOSED:._");
 		}
 		catch (Exception e){
 			System.err.println(e);
