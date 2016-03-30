@@ -19,6 +19,7 @@ import java.util.*;
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import java.net.NetworkInterface;
 
 
 /*
@@ -36,8 +37,29 @@ public class MultiThreadChatServerSync{
 		// The default port number.
 		int portNumber = 2222;
 		System.out.println("_.:SERVER DETAILS:._");
-		System.out.println("\t\tIP: Type ifconfig for details");
+		System.out.println("\t\tIP: Type ifconfig for details or see below");
 		System.out.println("\t\tPort: 2222");
+		try{
+			Enumeration enumer = NetworkInterface.getNetworkInterfaces();
+			while(enumer.hasMoreElements()){
+			    NetworkInterface n = (NetworkInterface) enumer.nextElement();
+			    Enumeration ee = n.getInetAddresses();
+			    while (ee.hasMoreElements())
+			    {
+			        InetAddress i = (InetAddress) ee.nextElement();
+					if (!i.isLoopbackAddress() && !i.isMulticastAddress() && !i.isLinkLocalAddress()){
+						System.out.println(i.getHostAddress());
+					}
+
+			    }
+			}
+		}
+		catch (Exception e){
+			System.out.println("Exception: " + e);
+		}
+
+
+
 		System.out.println("_.:SERVER DETAILS:._");
 
 		 /*
@@ -58,6 +80,7 @@ public class MultiThreadChatServerSync{
 			try{
 				clientSocket = serverSocket.accept();
 				client = new clientThread(clientSocket);
+
 			}
 			catch(IOException e){
 				System.out.println("IOException Error" + e);
@@ -100,6 +123,8 @@ class clientThread {
 			is = new DataInputStream(clientSocket.getInputStream());
 			os = new DataOutputStream(clientSocket.getOutputStream());
 			String name = "user";
+
+			System.out.println("\n\n_.:INCOMING CONNECTION ACCEPETED FROM " + clientSocket.getInetAddress() + ":._");
 
 			PrivateKey KRS = null;
 			//create server's assymmetric keys
