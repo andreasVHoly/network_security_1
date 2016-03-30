@@ -19,7 +19,7 @@ import javax.crypto.spec.*;
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-public class MultiThreadChatClient{
+public class Client{
 	//The client socket
 	private static Socket clientSocket = null;
 	// The output stream

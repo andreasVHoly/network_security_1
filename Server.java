@@ -25,7 +25,7 @@ import java.net.NetworkInterface;
 /*
 * A chat server that delivers public and private messages .
 */
-public class MultiThreadChatServerSync{
+public class Server{
 	// The server socket .
 	private static ServerSocket serverSocket = null;
 
