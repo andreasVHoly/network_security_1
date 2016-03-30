@@ -61,7 +61,7 @@ public class MultiThreadChatClient{
 			System.err.println("Couldn't get I/O for the connection to the host "+ host);
 		}
 
-		System.out.println("_.:CONNECTION TO SERVER ESTABLISHED AT localhost:2222:._\n");
+		System.out.println("_.:CONNECTION TO SERVER ESTABLISHED AT "  + host + ":2222:._\n");
 
 		//adding bouncy castle provider
 		Security.addProvider(new BouncyCastleProvider());
