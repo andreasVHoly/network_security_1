@@ -20,33 +20,77 @@ import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class Client{
+	private int portNumber;
+	private String host;
+	private Scanner clientIn;
 	//The client socket
-	private static Socket clientSocket = null;
+	private Socket clientSocket = null;
 	// The output stream
-	private static DataOutputStream os = null;
+	private DataOutputStream os = null;
 	// The input stream
-	private static DataInputStream is = null ;
-	private static BufferedReader inputLine = null;
-	private static boolean closed = false; //Volatile variable?
+	private DataInputStream is = null ;
+	private BufferedReader inputLine = null;
+	private boolean closed = false; //Volatile variable?
+	private PrivateKey KRC;
+	private PublicKey KUC;
+	private PublicKey KUS;
 
-
-	public static void main (String[] args){
-
+	/*Default constructor.*/
+	public Client () {
 		// The default port.
-		int portNumber = 2222;
+		portNumber = 2222;
 		// The default host.
-		String host = "localhost";
+		host = "localhost";
 
-		Scanner in2 = new Scanner(System.in);
+		clientIn = new Scanner(System.in);
 		System.out.println("Please enter server address: ");
 
 		if(!host.equals("")){
 			host = in2.nextLine();
 		}
+		clientIn.close();
 
-		/*
-		* Open a socket on a given host and port. Open input and output streams .
-		*/
+		//adding bouncy castle provider
+		Security.addProvider(new BouncyCastleProvider());
+		//default message
+		String plaintext = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
+
+
+		//get input from the user to get a message to decrypt
+		clientIn = new Scanner(System.in);
+		System.out.println("Please enter a message to encrypt: ");
+		if(!host.equals("")){
+			plaintext = clientIn.nextLine();
+		}
+	}
+
+	/*Constructor that sets up chat connecting to a specific server.
+	@params: IP address=> String serverIP
+				   host=> host*/
+	public Client (String serverIP, String host) {
+		// The default port.
+		portNumber = 2222;
+		// The default host.
+		host = host;
+
+		//adding bouncy castle provider
+		Security.addProvider(new BouncyCastleProvider());
+		//default message
+		String plaintext = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
+
+
+		//get input from the user to get a message to decrypt
+		clientIn = new Scanner(System.in);
+		System.out.println("Please enter a message to encrypt: ");
+		if(!host.equals("")){
+			plaintext = clientIn.nextLine();
+		}
+	}
+
+	/*
+	* Open a socket on a given host and port. Open input and output streams .
+	*/
+	public void socketSetup () {
 		try{
 			clientSocket = new Socket(host,portNumber);
 			inputLine = new BufferedReader(new InputStreamReader(System.in));
@@ -62,42 +106,41 @@ public class Client{
 		}
 
 		System.out.println("_.:CONNECTION TO SERVER ESTABLISHED AT "  + host + ":2222:._\n");
+	}
 
-		//adding bouncy castle provider
-		Security.addProvider(new BouncyCastleProvider());
-		//default message
-		String message = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
-
-
-		//get input from the user to get a message to decrypt
-		Scanner in = new Scanner(System.in);
-		System.out.println("Please enter a message to encrypt: ");
-		if(!host.equals("")){
-			message = in.nextLine();
-		}
-
-
-		try{
-
+	/*
+	Generate Message digest
+	*/
+	public byte[] generateHash (String plaintext) {
+		try {
 			//CREATE A HASH OF THE MESSAGE
 			System.out.println("_.:SETTING UP AUTHENTICATION:._");
-			byte[] digest = null;
-			byte[] signedMessage = null;
+			byte[] hash = null;
+			byte[] signedPlaintext = null;
 
 			System.out.println("\n\t.:CREATING MESSAGE DIGEST:.");
-			System.out.println("\t\tPlaintext: " + message);
+			System.out.println("\t\tPlaintext: " + plaintext);
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			md.update(message.getBytes("UTF-8"));
-			digest = md.digest();
+			md.update(plaintext.getBytes("UTF-8"));
+			hash = md.digest();
 			int mdValue = 0;
 			for (int i = 0; i < digest.length; i++){
-				mdValue += digest[i];
+				mdValue += hash[i];
 			}
 
 			System.out.println("\t\tMessage Digest Summation: " + mdValue);
 
-			System.out.println("\t\tMessage Digest Size: " + digest.length);
+			System.out.println("\t\tMessage Digest Size: " + hash.length);
 
+			return hash;
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	public void generateKeys () {
+		try {
 			//create private and public keys for client
 			System.out.println("\n\t.:CREATING PRIVATE AND PUBLIC KEY PAIR:.");
 			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
@@ -105,8 +148,8 @@ public class Client{
 			KeyPair keys = keyGen.generateKeyPair();
 
 			//get the key from the generator
-			PrivateKey KRC = keys.getPrivate();
-			PublicKey KUC = keys.getPublic();
+			KRC = keys.getPrivate();
+			KUC = keys.getPublic();
 
 			//convert to bytes
 			byte[] KUCArray = KUC.getEncoded();
@@ -123,33 +166,42 @@ public class Client{
 			FileOutputStream fos = new FileOutputStream("client_public_key.txt");
 			fos.write(KUCArray);
 			fos.close();
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
 
+	public byte[] encryptHash (byte[] hash) {
+		System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
 
-			System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
+		System.out.println("\t\tEncrypting Hash with Private Key");
+		//sign hash with private key
+		byte[] encryptedHash = null;
+		Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+		RSAcipher.init(Cipher.ENCRYPT_MODE, KRC);
+		encryptedHash = RSAcipher.doFinal(digest);
 
-			System.out.println("\t\tEncrypting Hash with Private Key");
-			//sign hash with private key
-			byte[] encryptedHash = null;
-			Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-			RSAcipher.init(Cipher.ENCRYPT_MODE, KRC);
-			encryptedHash = RSAcipher.doFinal(digest);
+		int count2 = 0;
+		for (int i = 0; i < encryptedHash.length; i++){
+			count2 += encryptedHash[i];
+		}
 
-			int count2 = 0;
-			for (int i = 0; i < encryptedHash.length; i++){
-				count2 += encryptedHash[i];
-			}
+		System.out.println("\t\tEncrypted Hash Summation: " + count2);
+		return encryptedHash;
+	}
 
-			System.out.println("\t\tEncrypted Hash Summation: " + count2);
-
+	public byte[] createCiphertext (byte[] encryptedHash, String plaintext) {
+		try {
 			//concantenate hash and original message
 			System.out.println("\n\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 			//add signature
 			outputStream.write(encryptedHash);
 			//add message
-			outputStream.write(message.getBytes("UTF-8"));
+			outputStream.write(plaintext.getBytes("UTF-8"));
 			//concat
-			signedMessage = outputStream.toByteArray();
+			byte[] signedMessage = outputStream.toByteArray();
 			outputStream.close();
 
 			int count3 = 0;
@@ -157,6 +209,15 @@ public class Client{
 				count3 += signedMessage[i];
 			}
 			System.out.println("\t\tAthenticated Packet Summation: " + count3);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	public static void main (String[] args){
+		try{
+
 
 			System.out.println("\n\t.:COMPRESSING AUTHENTICATED PACKET:.");
 			//zip the above
