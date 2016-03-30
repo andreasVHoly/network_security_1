@@ -33,9 +33,10 @@ public class Client{
 	private boolean closed = false; //Volatile variable?
 	private PrivateKey KRC;
 	private PublicKey KUC;
-	private secretKey secretKey;
+	private SecretKey secretKey;
 	private SecretKeySpec k;
 	private PublicKey KUS;
+	private Cipher aescipher;
 
 	/*Default constructor.*/
 	public Client () {
@@ -44,19 +45,19 @@ public class Client{
 		// The default host.
 		host = "localhost";
 
-		clientIn = new Scanner(System.in);
-		System.out.println("Please enter server address: ");
-
-		if(!host.equals("")){
-			host = in2.nextLine();
-		}
-		clientIn.close();
+		// clientIn = new Scanner(System.in);
+		// System.out.println("Please enter server address: ");
+		//
+		// if(!host.equals("")){
+		// 	host = clientIn.nextLine();
+		// }
+		// clientIn.close();
 
 		//adding bouncy castle provider
 		Security.addProvider(new BouncyCastleProvider());
 		//default message
-		String plaintext = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
-
+		// String plaintext = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
+		String plaintext = "";
 
 		//get input from the user to get a message to decrypt
 		clientIn = new Scanner(System.in);
@@ -64,6 +65,20 @@ public class Client{
 		if(!host.equals("")){
 			plaintext = clientIn.nextLine();
 		}
+
+		socketSetup();
+		byte[] hash = generateHash(plaintext);
+		generateKeys();
+		byte[] encryptedHash = encryptHash(hash);
+		byte[] authMessage = authenticatePlaintext(encryptedHash, plaintext);
+		byte[] compMessage = compressMessage(authMessage);
+		generateSecretKey();
+		byte[] ciphertext = generateCiphertext(compMessage);
+		generateIV();
+		getKUS();
+		byte[] encryptedKey = encryptSecretKey();
+		byte[] finCiphertext = generateFinalCiphertext(encryptedKey, ciphertext);
+		sendMessage(finCiphertext);
 	}
 
 	/*Constructor that sets up chat connecting to a specific server.
@@ -114,11 +129,12 @@ public class Client{
 	Generate Message digest
 	*/
 	public byte[] generateHash (String plaintext) {
+		System.out.println("_.:SETTING UP AUTHENTICATION:._");
+		byte[] hash = null;
+		byte[] signedPlaintext = null;
 		try {
 			//CREATE A HASH OF THE MESSAGE
-			System.out.println("_.:SETTING UP AUTHENTICATION:._");
-			byte[] hash = null;
-			byte[] signedPlaintext = null;
+
 
 			System.out.println("\n\t.:CREATING MESSAGE DIGEST:.");
 			System.out.println("\t\tPlaintext: " + plaintext);
@@ -126,19 +142,18 @@ public class Client{
 			md.update(plaintext.getBytes("UTF-8"));
 			hash = md.digest();
 			int mdValue = 0;
-			for (int i = 0; i < digest.length; i++){
+			for (int i = 0; i < hash.length; i++){
 				mdValue += hash[i];
 			}
 
 			System.out.println("\t\tMessage Digest Summation: " + mdValue);
 
 			System.out.println("\t\tMessage Digest Size: " + hash.length);
-
-			return hash;
 		}
 		catch (Exception e) {
 			System.err.println(e);
 		}
+		return hash;
 	}
 
 	public void generateKeys () {
@@ -175,15 +190,15 @@ public class Client{
 	}
 
 	public byte[] encryptHash (byte[] hash) {
-		try {
-			System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
+		System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
 
-			System.out.println("\t\tEncrypting Hash with Private Key");
-			//sign hash with private key
-			byte[] encryptedHash = null;
+		System.out.println("\t\tEncrypting Hash with Private Key");
+		//sign hash with private key
+		byte[] encryptedHash = null;
+		try {
 			Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			RSAcipher.init(Cipher.ENCRYPT_MODE, KRC);
-			encryptedHash = RSAcipher.doFinal(digest);
+			encryptedHash = RSAcipher.doFinal(hash);
 
 			int count2 = 0;
 			for (int i = 0; i < encryptedHash.length; i++){
@@ -192,24 +207,27 @@ public class Client{
 
 			System.out.println("\t\tEncrypted Hash Summation: " + count2);
 
-			return encryptedHash;
+
 		}
 		catch (Exception e) {
 			System.err.println(e);
 		}
+		return encryptedHash;
 	}
 
 	public byte[] authenticatePlaintext (byte[] encryptedHash, String plaintext) {
+		System.out.println("\n\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
+		byte[] authMessage = null;
 		try {
 			//concantenate hash and original message
-			System.out.println("\n\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
+
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
 			//add signature
 			outputStream.write(encryptedHash);
 			//add message
 			outputStream.write(plaintext.getBytes("UTF-8"));
 			//concat
-			byte[] authMessage = outputStream.toByteArray();
+			authMessage = outputStream.toByteArray();
 			outputStream.close();
 
 			int count3 = 0;
@@ -217,17 +235,18 @@ public class Client{
 				count3 += authMessage[i];
 			}
 			System.out.println("\t\tAthenticated Packet Summation: " + count3);
-
-			return authMessage;
 		}
 		catch (Exception e) {
 			System.err.println(e);
 		}
+		return authMessage;
 	}
 
 	public byte[] compressMessage (byte[] authMessage) {
+		System.out.println("\n\t.:COMPRESSING AUTHENTICATED PACKET:.");
+		byte[] compMessage = null;
 		try {
-			System.out.println("\n\t.:COMPRESSING AUTHENTICATED PACKET:.");
+
 			//zip the above
 
 			//using chunks of 1024 bytes
@@ -248,21 +267,20 @@ public class Client{
 			compress.end();
 
 			//zipped message
-			byte[] compMessage = o.toByteArray();
+			compMessage = o.toByteArray();
 
 			int count4 = 0;
-			for (int i = 0; i < op.length; i++){
-				count4 += op[i];
+			for (int i = 0; i < compMessage.length; i++){
+				count4 += compMessage[i];
 			}
 			System.out.println("\t\tCompressed Packet Summation: " + count4);
 
 			System.out.println("\n_.:AUTHENTICATION COMPLETE:._");
-
-			return compMessage;
 		}
 		catch (Exception e) {
 			System.err.println(e);
 		}
+		return compMessage;
 	}
 
 	public void generateSecretKey () {
@@ -290,12 +308,12 @@ public class Client{
 	}
 
 	public byte[] generateCiphertext (byte[] compMessage) {
-		try {
-			System.out.println("\n\t.:ENCRYPTING COMPRESSED PACKET WITH SHARED KEY:.");
-			//create cipher for encryption and encrypt zip\
+		System.out.println("\n\t.:ENCRYPTING COMPRESSED PACKET WITH SHARED KEY:.");
+		//create cipher for encryption and encrypt zip\
 
-			byte[] ciphertext = null;
-			Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+		byte[] ciphertext = null;
+		try {
+			aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			aescipher.init(Cipher.ENCRYPT_MODE, k);
 			ciphertext = aescipher.doFinal(compMessage);
 
@@ -305,15 +323,15 @@ public class Client{
 				count6 += ciphertext[i];
 			}
 			System.out.println("\t\tEncrypted Compressed Packet Summation: " + count6);
-
-			return ciphertext;
 		}
 		catch (Exception e) {
 			System.err.println(e);
 		}
+
+		return ciphertext;
 	}
 
-	public void generateIV (Cipher aescipher) {
+	public void generateIV () {
 		try {
 			System.out.println("\t\tExtracting the IV for decryption");
 
@@ -352,12 +370,12 @@ public class Client{
 	}
 
 	public byte[] encryptSecretKey () {
-		try {
-			System.out.println("\n\t.:ENCRYPTING SHARED KEY WITH SERVERS PUBLIC KEY:.");
+		System.out.println("\n\t.:ENCRYPTING SHARED KEY WITH SERVERS PUBLIC KEY:.");
 
-			System.out.println("\t\tEncrypting shared key with Servers Public Key");
-			//encrypt shared key with public key of server
-			byte[] encryptedKey = null;
+		System.out.println("\t\tEncrypting shared key with Servers Public Key");
+		//encrypt shared key with public key of server
+		byte[] encryptedKey = null;
+		try {
 			Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 			packet.init(Cipher.ENCRYPT_MODE, KUS);
 			encryptedKey = packet.doFinal(secretKey.getEncoded());
@@ -367,23 +385,24 @@ public class Client{
 				count8 += encryptedKey[i];
 			}
 			System.out.println("\t\tEncrypted Shared Key summation: " + count8);
-
-			return encryptedKey;
 		}
 		catch (Exception e) {
 			System.err.println(e);
 		}
+		return encryptedKey;
 	}
 
 	public byte[] generateFinalCiphertext (byte[] encryptedKey, byte[] ciphertext) {
+		System.out.println("\n\t.:CONCATENATING ENCRYPTED SHARED KEY AND ENCRYPTED PACKAGE:.");
+		byte[] finCiphertext = null;
 		try {
-			System.out.println("\n\t.:CONCATENATING ENCRYPTED SHARED KEY AND ENCRYPTED PACKAGE:.");
+
 			//concat the encrypyted shared key and the encrypted zip
 
 			ByteArrayOutputStream finalMessage = new ByteArrayOutputStream( );
 			finalMessage.write(encryptedKey);
-			finalMessage.write(encryptedPackage);
-			byte[] finCiphertext = finalMessage.toByteArray();
+			finalMessage.write(ciphertext);
+			finCiphertext = finalMessage.toByteArray();
 			finalMessage.close();
 
 			int count9 = 0;
@@ -398,6 +417,8 @@ public class Client{
 		catch (Exception e) {
 			System.err.println(e);
 		}
+
+		return finCiphertext;
 	}
 
 	public void sendMessage (byte[] finCiphertext) {
@@ -413,7 +434,7 @@ public class Client{
 
 
 			os.writeInt(finCiphertext.length);
-			os.write(fin);
+			os.write(finCiphertext);
 			System.out.println("_.:MESSAGE SENT TO SERVER:._");
 
 			System.out.println("\n_.:CONNECTION TO SERVER CLOSED:._");
