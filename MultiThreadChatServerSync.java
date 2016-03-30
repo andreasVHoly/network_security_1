@@ -39,6 +39,7 @@ public class MultiThreadChatServerSync{
 		System.out.println("_.:SERVER DETAILS:._");
 		System.out.println("\t\tIP: Type ifconfig for details or see below");
 		System.out.println("\t\tPort: 2222");
+		System.out.println("\t\tPort: Hosts picked up on machine:");
 		try{
 			Enumeration enumer = NetworkInterface.getNetworkInterfaces();
 			while(enumer.hasMoreElements()){
@@ -48,7 +49,7 @@ public class MultiThreadChatServerSync{
 			    {
 			        InetAddress i = (InetAddress) ee.nextElement();
 					if (!i.isLoopbackAddress() && !i.isMulticastAddress() && !i.isLinkLocalAddress()){
-						System.out.println(i.getHostAddress());
+						System.out.println("\t\t" + i.getHostAddress());
 					}
 
 			    }
