@@ -53,14 +53,14 @@ public class Client{
 		//adding bouncy castle provider
 		Security.addProvider(new BouncyCastleProvider());
 		//default message
-		String plaintext = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
+		String message = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
 
 
 		//get input from the user to get a message to decrypt
 		clientIn = new Scanner(System.in);
 		System.out.println("Please enter a message to encrypt: ");
 		if(!host.equals("")){
-			plaintext = clientIn.nextLine();
+			message = clientIn.nextLine();
 		}
 	}
 
@@ -76,14 +76,14 @@ public class Client{
 		//adding bouncy castle provider
 		Security.addProvider(new BouncyCastleProvider());
 		//default message
-		String plaintext = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
+		String message = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
 
 
 		//get input from the user to get a message to decrypt
 		clientIn = new Scanner(System.in);
 		System.out.println("Please enter a message to encrypt: ");
 		if(!host.equals("")){
-			plaintext = clientIn.nextLine();
+			message = clientIn.nextLine();
 		}
 	}
 
@@ -116,12 +116,12 @@ public class Client{
 			//CREATE A HASH OF THE MESSAGE
 			System.out.println("_.:SETTING UP AUTHENTICATION:._");
 			byte[] hash = null;
-			byte[] signedPlaintext = null;
+			byte[] signedMessage = null;
 
 			System.out.println("\n\t.:CREATING MESSAGE DIGEST:.");
-			System.out.println("\t\tPlaintext: " + plaintext);
+			System.out.println("\t\tPlaintext: " + message);
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			md.update(plaintext.getBytes("UTF-8"));
+			md.update(message.getBytes("UTF-8"));
 			hash = md.digest();
 			int mdValue = 0;
 			for (int i = 0; i < digest.length; i++){
@@ -199,7 +199,7 @@ public class Client{
 			//add signature
 			outputStream.write(encryptedHash);
 			//add message
-			outputStream.write(plaintext.getBytes("UTF-8"));
+			outputStream.write(message.getBytes("UTF-8"));
 			//concat
 			byte[] signedMessage = outputStream.toByteArray();
 			outputStream.close();
