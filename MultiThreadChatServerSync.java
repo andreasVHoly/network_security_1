@@ -36,7 +36,7 @@ public class MultiThreadChatServerSync{
 		// The default port number.
 		int portNumber = 2222;
 		System.out.println("_.:SERVER DETAILS:._");
-		System.out.println("\t\tIP: localhost");
+		System.out.println("\t\tIP: Type ifconfig for details");
 		System.out.println("\t\tPort: 2222");
 		System.out.println("_.:SERVER DETAILS:._");
 

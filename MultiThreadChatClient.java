@@ -37,6 +37,12 @@ public class MultiThreadChatClient{
 		// The default host.
 		String host = "localhost";
 
+		Scanner in2 = new Scanner(System.in);
+		System.out.println("Please enter server address: ");
+
+		if(!host.equals("")){
+			host = in2.nextLine();
+		}
 
 		/*
 		* Open a socket on a given host and port. Open input and output streams .
