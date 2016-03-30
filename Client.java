@@ -173,25 +173,31 @@ public class Client{
 	}
 
 	public byte[] encryptHash (byte[] hash) {
-		System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
+		try {
+			System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
 
-		System.out.println("\t\tEncrypting Hash with Private Key");
-		//sign hash with private key
-		byte[] encryptedHash = null;
-		Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		RSAcipher.init(Cipher.ENCRYPT_MODE, KRC);
-		encryptedHash = RSAcipher.doFinal(digest);
+			System.out.println("\t\tEncrypting Hash with Private Key");
+			//sign hash with private key
+			byte[] encryptedHash = null;
+			Cipher RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			RSAcipher.init(Cipher.ENCRYPT_MODE, KRC);
+			encryptedHash = RSAcipher.doFinal(digest);
 
-		int count2 = 0;
-		for (int i = 0; i < encryptedHash.length; i++){
-			count2 += encryptedHash[i];
+			int count2 = 0;
+			for (int i = 0; i < encryptedHash.length; i++){
+				count2 += encryptedHash[i];
+			}
+
+			System.out.println("\t\tEncrypted Hash Summation: " + count2);
+
+			return encryptedHash;
 		}
-
-		System.out.println("\t\tEncrypted Hash Summation: " + count2);
-		return encryptedHash;
+		catch (Exception e) {
+			System.err.println(e);
+		}
 	}
 
-	public byte[] createCiphertext (byte[] encryptedHash, String plaintext) {
+	public byte[] authenticatePlaintext (byte[] encryptedHash, String plaintext) {
 		try {
 			//concantenate hash and original message
 			System.out.println("\n\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
@@ -201,24 +207,24 @@ public class Client{
 			//add message
 			outputStream.write(plaintext.getBytes("UTF-8"));
 			//concat
-			byte[] signedMessage = outputStream.toByteArray();
+			byte[] authMessage = outputStream.toByteArray();
 			outputStream.close();
 
 			int count3 = 0;
-			for (int i = 0; i < signedMessage.length; i++){
-				count3 += signedMessage[i];
+			for (int i = 0; i < authMessage.length; i++){
+				count3 += authMessage[i];
 			}
 			System.out.println("\t\tAthenticated Packet Summation: " + count3);
+
+			return authMessage;
 		}
 		catch (Exception e) {
 			System.err.println(e);
 		}
 	}
 
-	public static void main (String[] args){
-		try{
-
-
+	public byte[] compressMessage (byte[] authMessage) {
+		try {
 			System.out.println("\n\t.:COMPRESSING AUTHENTICATED PACKET:.");
 			//zip the above
 
@@ -226,9 +232,9 @@ public class Client{
 			byte[] output = new byte[1024];
 			//create defalter
 			Deflater compress = new Deflater();
-			compress.setInput(signedMessage);
+			compress.setInput(authMessage);
 			//use byte array to avoid running out of space
-			ByteArrayOutputStream o = new ByteArrayOutputStream(signedMessage.length);
+			ByteArrayOutputStream o = new ByteArrayOutputStream(authMessage.length);
 			compress.finish();
 
 			//create zip
@@ -240,7 +246,7 @@ public class Client{
 			compress.end();
 
 			//zipped message
-			byte[] op = o.toByteArray();
+			byte[] compMessage = o.toByteArray();
 
 			int count4 = 0;
 			for (int i = 0; i < op.length; i++){
@@ -249,6 +255,19 @@ public class Client{
 			System.out.println("\t\tCompressed Packet Summation: " + count4);
 
 			System.out.println("\n_.:AUTHENTICATION COMPLETE:._");
+
+			return compMessage;
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	public static void main (String[] args){
+		try{
+
+
+
 			System.out.println("\n\n_.:SETTING UP CONFIDENTIALITY:._");
 
 
