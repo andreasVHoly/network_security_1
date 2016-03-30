@@ -33,6 +33,8 @@ public class Client{
 	private boolean closed = false; //Volatile variable?
 	private PrivateKey KRC;
 	private PublicKey KUC;
+	private secretKey secretKey;
+	private SecretKeySpec k;
 	private PublicKey KUS;
 
 	/*Default constructor.*/
@@ -263,49 +265,56 @@ public class Client{
 		}
 	}
 
-	public static void main (String[] args){
-		try{
-
-
-
+	public void generateSecretKey () {
+		try {
 			System.out.println("\n\n_.:SETTING UP CONFIDENTIALITY:._");
-
-
-
-
-			//encrypt the zip with shared key
 
 			//create shared key
 			System.out.println("\n\t.:CREATING SHARED KEY:.");
 			KeyGenerator secretKeyGen = KeyGenerator.getInstance("AES");
 	        secretKeyGen.init(128);
 			//GET KEY
-	        SecretKey secretKey = secretKeyGen.generateKey();
+	        secretKey = secretKeyGen.generateKey();
 			//new key spec
-			SecretKeySpec k = new SecretKeySpec(secretKey.getEncoded(), "AES");
+			k = new SecretKeySpec(secretKey.getEncoded(), "AES");
 
 			int count5 = 0;
 			for (int i = 0; i < secretKey.getEncoded().length; i++){
 				count5 += secretKey.getEncoded()[i];
 			}
 			System.out.println("\t\tShared Key Summation: " + count5);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
 
-
+	public byte[] generateCiphertext (byte[] compMessage) {
+		try {
 			System.out.println("\n\t.:ENCRYPTING COMPRESSED PACKET WITH SHARED KEY:.");
 			//create cipher for encryption and encrypt zip\
 
-			byte[] encryptedPackage = null;
+			byte[] ciphertext = null;
 			Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			aescipher.init(Cipher.ENCRYPT_MODE, k);
-			encryptedPackage = aescipher.doFinal(op);
+			ciphertext = aescipher.doFinal(compMessage);
 
 
 			int count6 = 0;
-			for (int i = 0; i < encryptedPackage.length; i++){
-				count6 += encryptedPackage[i];
+			for (int i = 0; i < ciphertext.length; i++){
+				count6 += ciphertext[i];
 			}
 			System.out.println("\t\tEncrypted Compressed Packet Summation: " + count6);
 
+			return ciphertext;
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	public void generateIV (Cipher aescipher) {
+		try {
 			System.out.println("\t\tExtracting the IV for decryption");
 
 			//get iv from cipher
@@ -321,16 +330,30 @@ public class Client{
 			FileOutputStream fos2 = new FileOutputStream("client_iv.txt");
 			fos2.write(iv);
 			fos2.close();
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
 
-
-			System.out.println("\n\t.:ENCRYPTING SHARED KEY WITH SERVERS PUBLIC KEY:.");
+	public void getKUS () {
+		try {
 			// get server key from file
 			System.out.println("\t\tReading in public key from file \"server_public_key.txt\"");
 			Path path = Paths.get("server_public_key.txt");
 			byte[] SKey = Files.readAllBytes(path);
 
 			//create server key from bytes
-			PublicKey KUS = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(SKey));
+			KUS = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(SKey));
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	public byte[] encryptSecretKey () {
+		try {
+			System.out.println("\n\t.:ENCRYPTING SHARED KEY WITH SERVERS PUBLIC KEY:.");
 
 			System.out.println("\t\tEncrypting shared key with Servers Public Key");
 			//encrypt shared key with public key of server
@@ -345,44 +368,64 @@ public class Client{
 			}
 			System.out.println("\t\tEncrypted Shared Key summation: " + count8);
 
+			return encryptedKey;
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
 
+	public byte[] generateFinalCiphertext (byte[] encryptedKey, byte[] ciphertext) {
+		try {
 			System.out.println("\n\t.:CONCATENATING ENCRYPTED SHARED KEY AND ENCRYPTED PACKAGE:.");
 			//concat the encrypyted shared key and the encrypted zip
 
 			ByteArrayOutputStream finalMessage = new ByteArrayOutputStream( );
 			finalMessage.write(encryptedKey);
 			finalMessage.write(encryptedPackage);
-			byte[] fin = finalMessage.toByteArray();
+			byte[] finCiphertext = finalMessage.toByteArray();
 			finalMessage.close();
 
 			int count9 = 0;
-			for (int i = 0; i < fin.length; i++){
-				count9 += fin[i];
+			for (int i = 0; i < finCiphertext.length; i++){
+				count9 += finCiphertext[i];
 			}
 			System.out.println("\t\tEncrypted Packet summation: " + count9);
 
 
 			System.out.println("\n_.:CONFIDENTIALITY COMPLETE:._");
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	public void sendMessage (byte[] finCiphertext) {
+		try {
 			System.out.println("\n\n_.:SENDING MESSAGE TO SERVER:._");
 			//send off
-			System.out.println("\t\tFinal Packet Size: " + fin.length);
+			System.out.println("\t\tFinal Packet Size: " + finCiphertext.length);
 			int count10 = 0;
-			for (int i = 0; i < fin.length; i++){
-				count10 += fin[i];
+			for (int i = 0; i < finCiphertext.length; i++){
+				count10 += finCiphertext[i];
 			}
 			System.out.println("\t\tFinal Packet summation: " + count10);
 
 
-			os.writeInt(fin.length);
+			os.writeInt(finCiphertext.length);
 			os.write(fin);
 			System.out.println("_.:MESSAGE SENT TO SERVER:._");
 
 			System.out.println("\n_.:CONNECTION TO SERVER CLOSED:._");
 		}
-		catch (Exception e){
+
+		catch (Exception e) {
 			System.err.println(e);
 		}
-		//end
+	}
+
+	public static void main (String[] args){
+		Client client = new Client();
 	}
 
 }
