@@ -363,7 +363,7 @@ public class Client{
 			for (int i = 0; i < iv.length; i++){
 				count7 += iv[i];
 			}
-			System.out.println("\t\tIV summation: " + count7);
+			System.out.println("\t\tIV Summation: " + count7);
 			//write iv to a file
 			System.out.println("\t\tWriting IV to file \"client_iv.txt\"");
 			FileOutputStream fos2 = new FileOutputStream("client_iv.txt");
@@ -405,7 +405,7 @@ public class Client{
 			for (int i = 0; i < encryptedKey.length; i++){
 				count8 += encryptedKey[i];
 			}
-			System.out.println("\t\tEncrypted Shared Key summation: " + count8);
+			System.out.println("\t\tEncrypted Shared Key Summation: " + count8);
 		}
 		catch (Exception e) {
 			System.err.println(e);
@@ -430,7 +430,7 @@ public class Client{
 			for (int i = 0; i < finCiphertext.length; i++){
 				count9 += finCiphertext[i];
 			}
-			System.out.println("\t\tEncrypted Packet summation: " + count9);
+			System.out.println("\t\tEncrypted Packet Summation: " + count9);
 
 
 			System.out.println("\n_.:CONFIDENTIALITY COMPLETE:._");
@@ -451,7 +451,7 @@ public class Client{
 			for (int i = 0; i < finCiphertext.length; i++){
 				count10 += finCiphertext[i];
 			}
-			System.out.println("\t\tFinal Packet summation: " + count10);
+			System.out.println("\t\tFinal Packet Summation: " + count10);
 
 
 			os.writeInt(finCiphertext.length);

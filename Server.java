@@ -150,7 +150,7 @@ class clientThread {
 				for (int i = 0; i < KUSArray.length; i++){
 					count1 += KUSArray[i];
 				}
-				System.out.println("\t\tServer's Public Key summation: " + count1);
+				System.out.println("\t\tServer's Public Key Summation: " + count1);
 				System.out.println("\n_.:SERVERS PRIVATE AND PUBLIC KEYS CREATED:._");
 			}
 			catch (Exception e){
@@ -174,7 +174,7 @@ class clientThread {
 				for (int i = 0; i < message.length; i++){
 					count2 += message[i];
 				}
-				System.out.println("\t\tReceived Packet summation: " + count2);
+				System.out.println("\t\tReceived Packet Summation: " + count2);
 
 				System.out.println("\n_.:PACKET FULLY RECEIVED FROM CLIENT:._");
 
@@ -204,13 +204,13 @@ class clientThread {
 					for (int i = 0; i < keyPart.length; i++){
 						count4 += keyPart[i];
 					}
-					System.out.println("\t\tEncrypted Shared Key summation: " + count4);
+					System.out.println("\t\tEncrypted Shared Key Summation: " + count4);
 
 					int count5 = 0;
 					for (int i = 0; i < crypPart.length; i++){
 						count5 += crypPart[i];
 					}
-					System.out.println("\t\tEncrypted Compressed Packet summation: " + count5);
+					System.out.println("\t\tEncrypted Compressed Packet Summation: " + count5);
 					System.out.println("\n_.:PACKET UNPACKED:._");
 
 
@@ -231,7 +231,7 @@ class clientThread {
 					for (int i = 0; i < decryptedKey.length; i++){
 						count6 += decryptedKey[i];
 					}
-					System.out.println("\t\tShared Key summation: " + count6);
+					System.out.println("\t\tShared Key Summation: " + count6);
 
 
 					//decrypt zip message with shared key
@@ -251,7 +251,7 @@ class clientThread {
 					for (int i = 0; i < iv.length; i++){
 						count7 += iv[i];
 					}
-					System.out.println("\t\tIV summation: " + count7);
+					System.out.println("\t\tIV Summation: " + count7);
 
 					//we decrypt the packet with the iv and the shared key
 
@@ -264,7 +264,7 @@ class clientThread {
 					for (int i = 0; i < decryptedPackage.length; i++){
 						count8 += decryptedPackage[i];
 					}
-					System.out.println("\t\tCompressed Packet summation: " + count8);
+					System.out.println("\t\tCompressed Packet Summation: " + count8);
 
 					System.out.println("\n_.:CONFIDENTIALITY ENSURED:._");
 					//AUTHENTICAION
@@ -290,14 +290,14 @@ class clientThread {
 					for (int i = 0; i < op2.length; i++){
 						count9 += op2[i];
 					}
-					System.out.println("\t\tUncompressed packet summation: " + count9);
+					System.out.println("\t\tUncompressed packet Summation: " + count9);
 
 
 					System.out.println("\n\t_.:SPLITTING UNCOMPRESSED MESSAGE:._");
 					//op2 is decompressed message
 					byte[] sigPart = new byte[128];
 					byte[] messagePart = new byte[op2.length-128];
-					System.out.println("\t\tSplitting off signature");
+					System.out.println("\t\tSplitting off Signature");
 					System.out.println("\t\tSplitting off Plaintext");
 					//signature is 128 bytes as we encrypted with private key
 					for(int i = 0; i < 128; i++){
@@ -307,6 +307,13 @@ class clientThread {
 					for(int j = 128, k = 0; j < op2.length; j++, k++){
 						messagePart[k] = op2[j];
 					}
+
+					int count14 = 0;
+					for (int i = 0; i < sigPart.length; i++){
+						count14 += sigPart[i];
+					}
+					System.out.println("\t\tEncrypted Hash Summation: " + count14);
+
 					//create message
 					System.out.println("\t\tReconstructing Plaintext");
 					System.out.println("\t\tPlaintext reads: ");
@@ -328,7 +335,7 @@ class clientThread {
 					for (int i = 0; i < digest.length; i++){
 						count10 += digest[i];
 					}
-					System.out.println("\t\tReconstructed Message Digest summation: " + count10);
+					System.out.println("\t\tReconstructed Message Digest Summation: " + count10);
 
 					System.out.println("\t\tReading in clients public key from \"client_public_key.txt\"");
 					//GET CLEINT PUBLIC KEY KUC
@@ -340,7 +347,7 @@ class clientThread {
 					for (int i = 0; i < CKey.length; i++){
 						count3 += CKey[i];
 					}
-					System.out.println("\t\tClients Public Key summation: " + count3);
+					System.out.println("\t\tClients Public Key Summation: " + count3);
 
 					//decrypt signed hash with public key
 					byte[] decryptedHash = null;
@@ -352,7 +359,7 @@ class clientThread {
 					for (int i = 0; i < decryptedHash.length; i++){
 						count11 += decryptedHash[i];
 					}
-					System.out.println("\t\tDecrypted Message Digest summation: " + count11);
+					System.out.println("\t\tDecrypted Message Digest Summation: " + count11);
 					System.out.println("\t\tChecking if Authenticity was achieved");
 
 					if (Arrays.equals(decryptedHash,digest)){
