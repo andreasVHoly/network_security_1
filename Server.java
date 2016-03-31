@@ -140,7 +140,7 @@ class clientThread {
 				PublicKey KUS = serverkeys.getPublic();
 
 				System.out.println("\n\t_.:EXPORTING SERVERS PUBLIC KEY:._");
-				System.out.println("\t\t Writing public key to file \"server_public_key.txt\"");
+				System.out.println("\t\tWriting public key to file \"server_public_key.txt\"");
 				//Write KUS to textfile server_public_key.txt
 				byte[] KUSArray = KUS.getEncoded();
 				FileOutputStream fos = new FileOutputStream("server_public_key.txt");
