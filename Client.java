@@ -30,7 +30,6 @@ public class Client{
 	// The input stream
 	private DataInputStream is = null ;
 	private BufferedReader inputLine = null;
-	private boolean closed = false; //Volatile variable?
 	private PrivateKey KRC;
 	private PublicKey KUC;
 	private SecretKey secretKey;
@@ -45,14 +44,15 @@ public class Client{
 		// The default host.
 		host = "localhost";
 
-		// clientIn = new Scanner(System.in);
-		// System.out.println("Please enter server address: ");
-		//
-		// if(!host.equals("")){
-		// 	host = clientIn.nextLine();
-		// }
-		// clientIn.close();
+		clientIn = new Scanner(System.in);
+		System.out.println("Please enter the server address: ");
 
+		if(!host.equals("")){
+			host = clientIn.nextLine();
+		}
+
+
+		socketSetup();
 		//adding bouncy castle provider
 		Security.addProvider(new BouncyCastleProvider());
 		//default message
@@ -60,25 +60,46 @@ public class Client{
 		String plaintext = "";
 
 		//get input from the user to get a message to decrypt
-		clientIn = new Scanner(System.in);
-		System.out.println("Please enter a message to encrypt: ");
+		System.out.println("Please enter a message to encrypt(/q to quit): ");
 		if(!host.equals("")){
 			plaintext = clientIn.nextLine();
 		}
+		//spacing
+		System.out.println("\n");
 
-		socketSetup();
-		byte[] hash = generateHash(plaintext);
-		generateKeys();
-		byte[] encryptedHash = encryptHash(hash);
-		byte[] authMessage = authenticatePlaintext(encryptedHash, plaintext);
-		byte[] compMessage = compressMessage(authMessage);
-		generateSecretKey();
-		byte[] ciphertext = generateCiphertext(compMessage);
-		generateIV();
-		getKUS();
-		byte[] encryptedKey = encryptSecretKey();
-		byte[] finCiphertext = generateFinalCiphertext(encryptedKey, ciphertext);
-		sendMessage(finCiphertext);
+		while(!plaintext.startsWith("/q")){
+			byte[] hash = generateHash(plaintext);
+			generateKeys();
+			byte[] encryptedHash = encryptHash(hash);
+			byte[] authMessage = authenticatePlaintext(encryptedHash, plaintext);
+			byte[] compMessage = compressMessage(authMessage);
+			generateSecretKey();
+			byte[] ciphertext = generateCiphertext(compMessage);
+			generateIV();
+			getKUS();
+			byte[] encryptedKey = encryptSecretKey();
+			byte[] finCiphertext = generateFinalCiphertext(encryptedKey, ciphertext);
+			sendMessage(finCiphertext);
+
+			System.out.println("\nPlease enter a message to encrypt(/q to quit): ");
+			if(!plaintext.equals("")){
+				plaintext = clientIn.nextLine();
+			}
+		}
+
+		System.out.println("\n_.:CLOSING CONNECTION TO SERVER:._");
+		//to let server know we are breaking the connection
+		try{
+			os.writeInt(0);
+			clientIn.close();
+			is.close();
+			os.close();
+			clientSocket.close();
+		}
+		catch (Exception e){
+			System.err.println("Exception: " + e);
+		}
+		System.out.println("\n_.:CONNECTION TO SERVER CLOSED:._");
 	}
 
 	/*Constructor that sets up chat connecting to a specific server.
@@ -437,7 +458,7 @@ public class Client{
 			os.write(finCiphertext);
 			System.out.println("_.:MESSAGE SENT TO SERVER:._");
 
-			System.out.println("\n_.:CONNECTION TO SERVER CLOSED:._");
+			//System.out.println("\n_.:CONNECTION TO SERVER CLOSED:._");
 		}
 
 		catch (Exception e) {
