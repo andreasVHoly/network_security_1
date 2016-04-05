@@ -19,6 +19,7 @@ import javax.crypto.spec.*;
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+
 public class Client{
 	private int portNumber;
 	private String host;
@@ -30,6 +31,7 @@ public class Client{
 	// The input stream
 	private DataInputStream is = null ;
 	private BufferedReader inputLine = null;
+	private boolean closed = false; //Volatile variable?
 	private PrivateKey KRC;
 	private PublicKey KUC;
 	private SecretKey secretKey;
@@ -102,9 +104,11 @@ public class Client{
 		System.out.println("\n_.:CONNECTION TO SERVER CLOSED:._");
 	}
 
-	/*Constructor that sets up chat connecting to a specific server.
-	@params: IP address=> String serverIP
-				   host=> host*/
+	/**
+	 * Paramterized contructor that sets up chat connecting to a specific server.
+	 * @param   String serverIP		Server's IP address
+	 * @param   String host			The host port
+	 */
 	public Client (String serverIP, String host) {
 		// The default port.
 		portNumber = 2222;
@@ -123,11 +127,25 @@ public class Client{
 		if(!host.equals("")){
 			plaintext = clientIn.nextLine();
 		}
+
+		socketSetup();
+		byte[] hash = generateHash(plaintext);
+		generateKeys();
+		byte[] encryptedHash = encryptHash(hash);
+		byte[] authMessage = authenticatePlaintext(encryptedHash, plaintext);
+		byte[] compMessage = compressMessage(authMessage);
+		generateSecretKey();
+		byte[] ciphertext = generateCiphertext(compMessage);
+		generateIV();
+		getKUS();
+		byte[] encryptedKey = encryptSecretKey();
+		byte[] finCiphertext = generateFinalCiphertext(encryptedKey, ciphertext);
+		sendMessage(finCiphertext);
 	}
 
-	/*
-	* Open a socket on a given host and port. Open input and output streams .
-	*/
+	/**
+	 * Open a socket on a given host and port. Open input and output streams
+	 */
 	public void socketSetup () {
 		try{
 			clientSocket = new Socket(host,portNumber);
@@ -149,6 +167,11 @@ public class Client{
 	/*
 	Generate Message digest
 	*/
+	/**
+	 * Generates message digest (hash) of Plaintext
+	 * @param String Plaintext	plaintext to be encrypted
+	 * @return byte[] hash		hash of plaintext (using SHA-256)
+	 */
 	public byte[] generateHash (String plaintext) {
 		System.out.println("_.:SETTING UP AUTHENTICATION:._");
 		byte[] hash = null;
@@ -177,6 +200,9 @@ public class Client{
 		return hash;
 	}
 
+	/**
+	 * Generate the public/private key pair for the client (KRC, KUC)
+	 */
 	public void generateKeys () {
 		try {
 			//create private and public keys for client
@@ -210,6 +236,11 @@ public class Client{
 		}
 	}
 
+	/**
+	 * Generates the digital signature by encrypting the hash with KRC (for authenticity)
+	 * @param  byte[] hash 				hash of plaintext (using SHA-256)
+	 * @return byte[] encryptedHash 	the digital signature (usign RSA, ECB with PKCS1Padding)
+	 */
 	public byte[] encryptHash (byte[] hash) {
 		System.out.println("\n\t.:SIGNING HASH WITH CLIENTS PRIVATE KEY:.");
 
@@ -236,6 +267,12 @@ public class Client{
 		return encryptedHash;
 	}
 
+	/**
+	 * Concatentates the digital signature to the plaintext (for authentication)
+	 * @param	byte[] encryptedHash	the digital signature (usign RSA, ECB with PKCS1Padding)
+	 * @param	String plaintext		the plaintext to be Encrypted
+	 * @return	byte[] authMessage		the concatentated payload to be encrypted for confidentiality
+	 */
 	public byte[] authenticatePlaintext (byte[] encryptedHash, String plaintext) {
 		System.out.println("\n\t.:CONCATENATING SIGNATURE AND MESSAGE:.");
 		byte[] authMessage = null;
@@ -263,6 +300,11 @@ public class Client{
 		return authMessage;
 	}
 
+	/**
+	 * Compresses the payload for encryption
+	 * @param	byte[] authMessage	the payload to be encrypted (Digital Signature + Plaintext)
+	 * @return	byte[] compMessage	the compressed payload to be encrypted
+	 */
 	public byte[] compressMessage (byte[] authMessage) {
 		System.out.println("\n\t.:COMPRESSING AUTHENTICATED PACKET:.");
 		byte[] compMessage = null;
@@ -304,6 +346,9 @@ public class Client{
 		return compMessage;
 	}
 
+	/**
+	 * Generates the secret/shared key Ks to be used by the server to decrypt the payload
+	 */
 	public void generateSecretKey () {
 		try {
 			System.out.println("\n\n_.:SETTING UP CONFIDENTIALITY:._");
@@ -328,6 +373,11 @@ public class Client{
 		}
 	}
 
+	/**
+	 * Encrypt the compressed payload
+	 * @param	byte[] compMessage	the compressed payload to be encrypted
+	 * @return	byte[] ciphertext	E_(Ks){Z(DS + P)}
+	 */
 	public byte[] generateCiphertext (byte[] compMessage) {
 		System.out.println("\n\t.:ENCRYPTING COMPRESSED PACKET WITH SHARED KEY:.");
 		//create cipher for encryption and encrypt zip\
@@ -352,6 +402,9 @@ public class Client{
 		return ciphertext;
 	}
 
+	/**
+	 * Generates the initiation vector for CBC mode encryption and stores it for server to use when decrypting the compressed payload (DS + P)
+	 */
 	public void generateIV () {
 		try {
 			System.out.println("\t\tExtracting the IV for decryption");
@@ -375,6 +428,9 @@ public class Client{
 		}
 	}
 
+	/**
+	 * Acquire the server's public key KUS
+	 */
 	public void getKUS () {
 		try {
 			// get server key from file
@@ -390,6 +446,10 @@ public class Client{
 		}
 	}
 
+	/**
+	 * Encrypts the shared/secret key Ks
+	 * @return byte[] encryptedKey	E_(KUS){Ks}
+	 */
 	public byte[] encryptSecretKey () {
 		System.out.println("\n\t.:ENCRYPTING SHARED KEY WITH SERVERS PUBLIC KEY:.");
 
@@ -413,6 +473,12 @@ public class Client{
 		return encryptedKey;
 	}
 
+	/**
+	 *Concatenates the encrypted shared/secret key with the compressed and encrypted digital signature and plaintext
+	 *@param  byte[] encryptedKey  E_(KUS){Ks}
+	 *@param  byte[] ciphertext    encrypted + compressed payload E_(Ks){Z(DS + P)}
+	 *@return byte[] finCiphertext the message to be sent to the server
+	 */
 	public byte[] generateFinalCiphertext (byte[] encryptedKey, byte[] ciphertext) {
 		System.out.println("\n\t.:CONCATENATING ENCRYPTED SHARED KEY AND ENCRYPTED PACKAGE:.");
 		byte[] finCiphertext = null;
@@ -442,6 +508,10 @@ public class Client{
 		return finCiphertext;
 	}
 
+	/**
+	 * Sends encrypted message to server.
+	 * @param byte[] finCiphertext - encrypted message to send.
+	 */
 	public void sendMessage (byte[] finCiphertext) {
 		try {
 			System.out.println("\n\n_.:SENDING MESSAGE TO SERVER:._");

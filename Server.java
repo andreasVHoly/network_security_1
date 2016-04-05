@@ -27,20 +27,25 @@ import java.net.NetworkInterface;
 */
 public class Server{
 	// The server socket .
-	private static ServerSocket serverSocket = null;
+	private ServerSocket serverSocket = null;
 
 	// The client socket .
-	private static Socket clientSocket = null;
+	private Socket clientSocket = null;
 
+	public Server() {
+		setupServer();
+	}
 
-	public static void main(String args[]){
+	/**
+	 * Sets up the server for incoming messages from client
+	 */
+	public void setupServer () {
 		// The default port number.
 		int portNumber = 2222;
 		System.out.println("_.:SERVER DETAILS:._");
 		System.out.println("\t\tIP: Type ifconfig for details or see below");
 		System.out.println("\t\tPort: 2222");
 		System.out.println("\t\tHosts picked up on machine:");
-		//get all IP addresses on machine to help client connect
 		try{
 			Enumeration enumer = NetworkInterface.getNetworkInterfaces();
 			while(enumer.hasMoreElements()){
@@ -75,32 +80,29 @@ public class Server{
 			System.out.println("IO_ExceptionERROR" + e);
 		}
 
-		 /*
-		* Create a client socket */
-		clientThread client = null;
+		/*
+	  * Create a client socket */
+	  clientThread client = null;
 
-		try{
-			clientSocket = serverSocket.accept();
-			client = new clientThread(clientSocket);
-		}
-		catch(IOException e){
-			System.out.println("IOException Error" + e);
-		}
-		System.out.println("\n\n_.:SERVER SHUT DOWN:._");
+	  try{
+		  clientSocket = serverSocket.accept();
+		  client = new clientThread(clientSocket);
+	  }
+	  catch(IOException e){
+		  System.out.println("IOException Error" + e);
+	  }
+	  System.out.println("\n\n_.:SERVER SHUT DOWN:._");
+  }
 
+	public static void main(String args[]){
+		Server S = new Server();
 	}//main
 }//class
 
 
-/*
-* The chat client thread . This client thread opens the input and the output
-* streams for a particular client , ask the client's name , informs all the
-* clients connected to the server about the fact that a new client has joined
-* the chat room , and as long as it receive data , echos that data back to all
-* other clients. The thread broadcast the incoming messages to all clients and
-* routes the private message to the particular client . When a client leaves the
-* chat room this thread informs all the clients about that and terminates.
-*/
+/**
+ * Handles the receiving and decryption of messages sent from the client
+ */
 class clientThread {
 
 	private String clientName = null;
@@ -108,276 +110,455 @@ class clientThread {
 	private DataOutputStream os = null;
 	private Socket clientSocket = null;
 	private InetAddress address;//address that holds the IP
+	private PrivateKey KRS;
+	private PublicKey KUS;
+	private PublicKey KUC;
+	private SecretKey secretKey = null;
+	private SecretKeySpec sk = null;
 
-
+	/**
+	 * Parameterized contructor that sets up the socket connection between server and client
+	 * @param clientSocket The client's socket that the server accepts
+	 */
 	public clientThread(Socket clientSocket){
 		this.clientSocket = clientSocket;
 		this.address = this.clientSocket.getInetAddress();//get the address from the connecting client
 		startServer();
 	}
 
-
-	public void startServer(){
-		try{
-			/*
-			* Create input and output streams for this client.
-			*/
+	/**
+	 * Creates input and output streams for the communication between client and server
+	 */
+	public void createIOStreams () {
+		try {
 			is = new DataInputStream(clientSocket.getInputStream());
 			os = new DataOutputStream(clientSocket.getOutputStream());
 			String name = "user";
 
 			System.out.println("\n\n_.:INCOMING CONNECTION ACCEPETED FROM " + clientSocket.getInetAddress() + ":._");
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
 
-			PrivateKey KRS = null;
+	/**
+	 * Generates the Server's public/private key pair (KRS, KUS)
+	 */
+	public void generateKeys() {
+		try {
+			KRS = null;
 			//create server's assymmetric keys
-			try{
-				System.out.println("\n\n_.:CREATING SERVERS PRIVATE AND PUBLIC KEYS:._");
-				KeyPairGenerator keyGen2 = KeyPairGenerator.getInstance("RSA");
-				keyGen2.initialize(1024);
-				KeyPair serverkeys = keyGen2.generateKeyPair();
-				//get keys
-				KRS = serverkeys.getPrivate();
-				PublicKey KUS = serverkeys.getPublic();
+			System.out.println("\n\n_.:CREATING SERVERS PRIVATE AND PUBLIC KEYS:._");
+			KeyPairGenerator keyGen2 = KeyPairGenerator.getInstance("RSA");
+			keyGen2.initialize(1024);
+			KeyPair serverkeys = keyGen2.generateKeyPair();
+			//get keys
+			KRS = serverkeys.getPrivate();
+			KUS = serverkeys.getPublic();
 
-				System.out.println("\n\t_.:EXPORTING SERVERS PUBLIC KEY:._");
-				System.out.println("\t\tWriting public key to file \"server_public_key.txt\"");
-				//Write KUS to textfile server_public_key.txt
-				byte[] KUSArray = KUS.getEncoded();
-				FileOutputStream fos = new FileOutputStream("server_public_key.txt");
-				fos.write(KUSArray);
-				fos.close();
-				int count1 = 0;
-				for (int i = 0; i < KUSArray.length; i++){
-					count1 += KUSArray[i];
-				}
-				System.out.println("\t\tServer's Public Key Summation: " + count1);
-				System.out.println("\n_.:SERVERS PRIVATE AND PUBLIC KEYS CREATED:._");
+			System.out.println("\n\t_.:EXPORTING SERVERS PUBLIC KEY:._");
+			System.out.println("\t\tWriting public key to file \"server_public_key.txt\"");
+			//Write KUS to textfile server_public_key.txt
+			byte[] KUSArray = KUS.getEncoded();
+			FileOutputStream fos = new FileOutputStream("server_public_key.txt");
+			fos.write(KUSArray);
+			fos.close();
+			int count1 = 0;
+			for (int i = 0; i < KUSArray.length; i++){
+				count1 += KUSArray[i];
 			}
-			catch (Exception e){
-				System.out.println("Exception: " + e);
+			System.out.println("\t\tServer's Public Key summation: " + count1);
+			System.out.println("\n_.:SERVERS PRIVATE AND PUBLIC KEYS CREATED:._");
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	/**
+	 * Receive message from CLIENT
+	 * @return	byte[] message	the message sent from the client
+	 */
+	public byte[] receiveMessage() {
+		byte[] message = null;
+		try {
+			System.out.println("\n\n_.:WAITING FOR CLIENT:._");
+			int msgLength = is.readInt();
+			System.out.println("\n\n_.:RECEIVING PACKET FROM CLIENT:._");
+			System.out.println("\t_.:PACKET DETAILS:._");
+			System.out.println("\t\tSize of arriving packet: " + msgLength);
+
+			if (msgLength >0){
+				message = new byte[msgLength];
+				is.readFully(message, 0, message.length);
+			}else{
+				return null;
 			}
-			while(true){
-				System.out.println("\n\n_.:WAITING FOR CLIENT:._");
-				int msgLength = is.readInt();
-				System.out.println("\n\n_.:RECEIVING PACKET FROM CLIENT:._");
-				System.out.println("\t_.:PACKET DETAILS:._");
-				System.out.println("\t\tSize of arriving packet: " + msgLength);
-				byte[] message = null;
-				if (msgLength > 0){
-					message = new byte[msgLength];
-					is.readFully(message, 0, message.length);
-				}
-				else{
+			int count2 = 0;
+			for (int i = 0; i < message.length; i++){
+				count2 += message[i];
+			}
+			System.out.println("\t\tReceived Packet summation: " + count2);
+
+			System.out.println("\n_.:PACKET FULLY RECEIVED FROM CLIENT:._");
+
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return message;
+	}
+
+	/**
+	 * Gets the encrypted shared key (E_(KUS){Ks})
+	 * @param	byte[] message	the message sent from client
+	 * @return	byte[] keyPart	the encrypted shared key
+	 */
+	public byte[] getEncrptedKeyPart(byte[] message) {
+		byte[] keyPart = new byte[128];
+		try {
+			//add provider
+			Security.addProvider(new BouncyCastleProvider());
+			//do crypto stuff here
+			System.out.println("\n\n_.:UNPACKING PACKET:._");
+
+			System.out.println("\n\t_.:SPLITTING UP RECEIVED PACKET:._");
+			//split up packet
+
+
+			for(int i = 0; i < 128; i++){
+				keyPart[i] = message[i];
+			}
+
+			int count4 = 0;
+			for (int i = 0; i < keyPart.length; i++){
+				count4 += keyPart[i];
+			}
+			System.out.println("\t\tEncrypted Shared Key summation: " + count4);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+
+		return keyPart;
+	}
+
+	/**
+	 * Gets the ciphertext E_(Ks){Z(DS + P)} from message
+ 	 * @param	byte[] message	the message sent from client
+ 	 * @return	byte[] crypPart	the encrypted and compressed payload
+	 */
+	public byte[] getEncryptedMessagePart(byte[] message) {
+		byte[] crypPart = new byte[message.length-128];
+		try {
+
+			//we know the encrypted key is 128bits
+
+			//rest is the encrypted message
+			for(int j = 128, k = 0; j < message.length; j++, k++){
+				crypPart[k] = message[j];
+			}
+
+			int count5 = 0;
+			for (int i = 0; i < crypPart.length; i++){
+				count5 += crypPart[i];
+			}
+			System.out.println("\t\tEncrypted Compressed Packet summation: " + count5);
+			System.out.println("\n_.:PACKET UNPACKED:._");
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return crypPart;
+	}
+
+	/**
+	 * Decrypts the shared key using KRS
+	 * @param	byte[] keyPart E_(KUS){Ks} (ensuring confidentiality)
+	 */
+	public void decryptSharedKey (byte[] keyPart) {
+
+		try {
+			//CONFIDENTIALITY
+			System.out.println("\n\n_.:ENSURING CONFIDENTIALITY:._");
+			System.out.println("\n\t_.:DECRYPTING SHARED KEY:._");
+
+			//decrypt shared key with the public key of client
+			byte[] decryptedKey = null;
+			Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			packet.init(Cipher.DECRYPT_MODE, KRS);
+			decryptedKey = packet.doFinal(keyPart);
+
+			int count6 = 0;
+			for (int i = 0; i < decryptedKey.length; i++){
+				count6 += decryptedKey[i];
+			}
+			System.out.println("\t\tShared Key summation: " + count6);
+
+			//reconstruct shared key
+			secretKey = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
+			sk = new SecretKeySpec(secretKey.getEncoded(), "AES");
+			System.out.println("\t\tShared Key constructed");
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	/**
+	 * Decrypts the ciphertext E_(Ks){Z(DS + P)} using Ks (ensuring confidentiality)
+	 * @param	byte[] crypPart			the encrypted and compressed payload
+	 * @return	byte[] decryptedPackage	Z(DS + P)
+	 */
+	public byte[] decryptMessage (byte[] crypPart) {
+		byte[] decryptedPackage = null;
+		try {
+			System.out.println("\n\t_.:DECRYPTING COMPRESSED MESSAGE:._");
+
+			//get iv for decryption
+			System.out.println("\t\tReading in IV from file \"client_iv.txt\"");
+			Path path2 = Paths.get("client_iv.txt");
+			byte[] iv = Files.readAllBytes(path2);
+
+			int count7 = 0;
+			for (int i = 0; i < iv.length; i++){
+				count7 += iv[i];
+			}
+			System.out.println("\t\tIV summation: " + count7);
+
+			//we decrypt the packet with the iv and the shared key
+
+
+			Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			aescipher.init(Cipher.DECRYPT_MODE, sk, new IvParameterSpec(iv));
+			decryptedPackage = aescipher.doFinal(crypPart);
+
+			int count8 = 0;
+			for (int i = 0; i < decryptedPackage.length; i++){
+				count8 += decryptedPackage[i];
+			}
+			System.out.println("\t\tCompressed Packet summation: " + count8);
+
+			System.out.println("\n_.:CONFIDENTIALITY ENSURED:._");
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return decryptedPackage;
+	}
+
+	/**
+	 * Decompresses payload
+	 * @param	byte[] decryptedPackage	Z(DS + P)
+	 * @return	byte[] authMessage		DS + P (digital signature + plaintext)
+	 */
+	public byte[] decompressMessage (byte[] decryptedPackage) {
+		byte[] result = new byte[1024];
+		byte[] authMessage = null;
+		try {
+			//AUTHENTICAION
+			System.out.println("\n\n_.:ENSURING AUTHENTICITY:._");
+
+			System.out.println("\n\t_.:DECROMPESSING PACKAGE:._");
+
+			//create inflater
+			Inflater decompresser = new Inflater();
+			decompresser.setInput(decryptedPackage, 0, decryptedPackage.length);
+
+			//read out values
+			ByteArrayOutputStream o2 = new ByteArrayOutputStream(decryptedPackage.length);
+			while(!decompresser.finished()){
+				int count = decompresser.inflate(result);
+				o2.write(result,0,count);
+			}
+			o2.close();
+			authMessage = o2.toByteArray();
+			decompresser.end();
+
+			int count9 = 0;
+			for (int i = 0; i < authMessage.length; i++){
+				count9 += authMessage[i];
+			}
+			System.out.println("\t\tUncompressed packet summation: " + count9);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return authMessage;
+	}
+
+	/**
+	 * Gets the digital signature DS from the authenticated message (DS + P)
+	 * @param	byte[] authMessage	DS + P (digital signature + plaintext)
+	 * @return	byte[] sigPart		DS
+	 */
+	public byte[] getSignaturePart (byte[] authMessage) {
+		System.out.println("\n\t_.:SPLITTING UNCOMPRESSED MESSAGE:._");
+		//authMessage is decompressed message
+		byte[] sigPart = new byte[128];
+		try {
+			System.out.println("\t\tSplitting off signature");
+			//signature is 128 bytes as we encrypted with private key
+			for(int i = 0; i < 128; i++){
+				sigPart[i] = authMessage[i];
+			}
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return sigPart;
+	}
+
+	/**
+	 * Gets the plaintext P from the authenticated message (DS + P)
+	 * @param	byte[] authMessage	DS + P (digital signature + plaintext)
+	 * @return	byte[] plaintext	P
+	 */
+	public byte[] getPlaintext (byte[] authMessage) {
+		byte[] plaintext = new byte[authMessage.length-128];
+		try {
+			System.out.println("\t\tSplitting off Plaintext");
+
+			//rest is the plain text
+			for(int j = 128, k = 0; j < authMessage.length; j++, k++){
+				plaintext[k] = authMessage[j];
+			}
+
+			//create message
+			System.out.println("\t\tReconstructing Plaintext");
+			System.out.println("\t\tPlaintext reads: ");
+			System.out.println("\t\t________________________________________________________");
+			System.out.println("\t\t" + new String(plaintext) );
+			System.out.println("\t\t________________________________________________________");
+			System.out.println("\t\tMessage End");
+
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return plaintext;
+	}
+
+	/**
+	 * genreates the hash of the received plaintext to be compared with the received hash (for authentication)
+	 * @param	byte[] plaintext	original text from client
+	 * @return	byte[] digest		the hash H_S(P) (using SHA-256)
+	 */
+	public byte[] generatePlaintextHash (byte[] plaintext) {
+		byte[] digest = null;
+		try {
+			System.out.println("\n\t_.:CONFIRMING AUTHENTICITY:._");
+			//create hash of the message to check signature
+			System.out.println("\t\tMaking own Message Digest of Plaintext");
+
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.update(plaintext);
+			digest = md.digest();
+
+			int count10 = 0;
+			for (int i = 0; i < digest.length; i++){
+				count10 += digest[i];
+			}
+			System.out.println("\t\tReconstructed Message Digest summation: " + count10);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return digest;
+	}
+
+	/**
+	 * acquires the client's public key to decrypt the digital signature (for authentication)
+	 */
+	public void getKUC () {
+		try {
+			System.out.println("\t\tReading in clients public key from \"client_public_key.txt\"");
+			//GET CLEINT PUBLIC KEY KUC
+			Path path = Paths.get("client_public_key.txt");
+			byte [] CKey = Files.readAllBytes(path);
+			//generate public key from bytes
+			KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(CKey));
+			int count3 = 0;
+			for (int i = 0; i < CKey.length; i++){
+				count3 += CKey[i];
+			}
+			System.out.println("\t\tClients Public Key summation: " + count3);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	/**
+	 * Decrypts the hash
+	 * @param	byte[] sigPart		E_(KRC){H_C(P)}
+	 * @return byte[] decryptedHash	H_C(P) (received from client)
+	 */
+	public byte[] decryptHash (byte[] sigPart) {
+		//decrypt signed hash with public key
+		byte[] decryptedHash = null;
+		try {
+			Cipher hashCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+			hashCipher.init(Cipher.DECRYPT_MODE, KUC);
+			decryptedHash = hashCipher.doFinal(sigPart);
+
+			int count11 = 0;
+			for (int i = 0; i < decryptedHash.length; i++){
+				count11 += decryptedHash[i];
+			}
+			System.out.println("\t\tDecrypted Message Digest summation: " + count11);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+		return decryptedHash;
+	}
+
+	/**
+	 * Compares the received and generated hashes and if they are the same then the server can verify the authenticity
+	 * of the digital signature. Thus the server knows the message was indeed sent from the client.
+	 * @param  byte[] decryptedHash	H_C(P) (received from client)
+	 * @param  byte[] digest		H_S(P) (generated by server)
+	 */
+	public void authenticate (byte[] decryptedHash, byte[] digest) {
+		try {
+			System.out.println("\t\tChecking if Authenticity was achieved");
+
+			if (Arrays.equals(decryptedHash,digest)){
+				System.out.println("\t\tAuthenticity was achieved");
+			}else{
+				System.out.println("\t\tAuthenticity was not achieved! DONT TRUST THIS MESSAGE!");
+			}
+			System.out.println("\n_.:AUTHENTICITY ENSURED:._");
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	public void startServer(){
+		try {
+			createIOStreams();
+			generateKeys();
+
+			while (true){
+				byte[] recEncryptedMessage = receiveMessage();
+				if (recEncryptedMessage == null){
 					break;
 				}
-				int count2 = 0;
-				for (int i = 0; i < message.length; i++){
-					count2 += message[i];
-				}
-				System.out.println("\t\tReceived Packet Summation: " + count2);
-
-				System.out.println("\n_.:PACKET FULLY RECEIVED FROM CLIENT:._");
-
-
-				try{
-
-
-					//add provider
-					Security.addProvider(new BouncyCastleProvider());
-					//do crypto stuff here
-					System.out.println("\n\n_.:UNPACKING PACKET:._");
-
-					System.out.println("\n\t_.:SPLITTING UP RECEIVED PACKET:._");
-					//split up packet
-					byte[] keyPart = new byte[128];
-					byte[] crypPart = new byte[message.length-128];
-					//we know the encrypted key is 128bits
-					for(int i = 0; i < 128; i++){
-						keyPart[i] = message[i];
-					}
-					//rest is the encrypted message
-					for(int j = 128, k = 0; j < message.length; j++, k++){
-						crypPart[k] = message[j];
-					}
-
-					int count4 = 0;
-					for (int i = 0; i < keyPart.length; i++){
-						count4 += keyPart[i];
-					}
-					System.out.println("\t\tEncrypted Shared Key Summation: " + count4);
-
-					int count5 = 0;
-					for (int i = 0; i < crypPart.length; i++){
-						count5 += crypPart[i];
-					}
-					System.out.println("\t\tEncrypted Compressed Packet Summation: " + count5);
-					System.out.println("\n_.:PACKET UNPACKED:._");
-
-
-					//CONFIDENTIALITY
-					System.out.println("\n\n_.:ENSURING CONFIDENTIALITY:._");
-					System.out.println("\n\t_.:DECRYPTING SHARED KEY:._");
-
-
-
-
-					//decrypt shared key with the public key of client
-					byte[] decryptedKey = null;
-					Cipher packet = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-					packet.init(Cipher.DECRYPT_MODE, KRS);
-					decryptedKey = packet.doFinal(keyPart);
-
-					int count6 = 0;
-					for (int i = 0; i < decryptedKey.length; i++){
-						count6 += decryptedKey[i];
-					}
-					System.out.println("\t\tShared Key Summation: " + count6);
-
-
-					//decrypt zip message with shared key
-					//reconstruct shared key
-					SecretKey secretKey = new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
-					SecretKeySpec sk = new SecretKeySpec(secretKey.getEncoded(), "AES");
-					System.out.println("\t\tShared Key constructed");
-
-					System.out.println("\n\t_.:DECRYPTING COMPRESSED MESSAGE:._");
-
-					//get iv for decryption
-					System.out.println("\t\tReading in IV from file \"client_iv.txt\"");
-					Path path2 = Paths.get("client_iv.txt");
-					byte[] iv = Files.readAllBytes(path2);
-
-					int count7 = 0;
-					for (int i = 0; i < iv.length; i++){
-						count7 += iv[i];
-					}
-					System.out.println("\t\tIV Summation: " + count7);
-
-					//we decrypt the packet with the iv and the shared key
-
-					byte[] decryptedPackage = null;
-					Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-					aescipher.init(Cipher.DECRYPT_MODE, sk, new IvParameterSpec(iv));
-					decryptedPackage = aescipher.doFinal(crypPart);
-
-					int count8 = 0;
-					for (int i = 0; i < decryptedPackage.length; i++){
-						count8 += decryptedPackage[i];
-					}
-					System.out.println("\t\tCompressed Packet Summation: " + count8);
-
-					System.out.println("\n_.:CONFIDENTIALITY ENSURED:._");
-					//AUTHENTICAION
-					System.out.println("\n\n_.:ENSURING AUTHENTICITY:._");
-
-					System.out.println("\n\t_.:DECROMPESSING PACKAGE:._");
-
-					//create inflater
-					Inflater decompresser = new Inflater();
-					decompresser.setInput(decryptedPackage, 0, decryptedPackage.length);
-					byte[] result = new byte[1024];
-					//read out values
-					ByteArrayOutputStream o2 = new ByteArrayOutputStream(decryptedPackage.length);
-					while(!decompresser.finished()){
-						int count = decompresser.inflate(result);
-						o2.write(result,0,count);
-					}
-					o2.close();
-					byte[] op2 = o2.toByteArray();
-					decompresser.end();
-
-					int count9 = 0;
-					for (int i = 0; i < op2.length; i++){
-						count9 += op2[i];
-					}
-					System.out.println("\t\tUncompressed packet Summation: " + count9);
-
-
-					System.out.println("\n\t_.:SPLITTING UNCOMPRESSED MESSAGE:._");
-					//op2 is decompressed message
-					byte[] sigPart = new byte[128];
-					byte[] messagePart = new byte[op2.length-128];
-					System.out.println("\t\tSplitting off Signature");
-					System.out.println("\t\tSplitting off Plaintext");
-					//signature is 128 bytes as we encrypted with private key
-					for(int i = 0; i < 128; i++){
-						sigPart[i] = op2[i];
-					}
-					//rest is the plain text
-					for(int j = 128, k = 0; j < op2.length; j++, k++){
-						messagePart[k] = op2[j];
-					}
-
-					int count14 = 0;
-					for (int i = 0; i < sigPart.length; i++){
-						count14 += sigPart[i];
-					}
-					System.out.println("\t\tEncrypted Hash Summation: " + count14);
-
-					//create message
-					System.out.println("\t\tReconstructing Plaintext");
-					System.out.println("\t\tPlaintext reads: ");
-					System.out.println("\t\t________________________________________________________");
-					String origMessage = new String(messagePart);
-					System.out.println("\t\t" + origMessage );
-					System.out.println("\t\t________________________________________________________");
-					System.out.println("\t\tMessage End");
-
-					System.out.println("\n\t_.:CONFIRMING AUTHENTICITY:._");
-					//create hash of the message to check signature
-					System.out.println("\t\tMaking own Message Digest of Plaintext");
-					byte[] digest = null;
-					MessageDigest md = MessageDigest.getInstance("SHA-256");
-					md.update(messagePart);
-					digest = md.digest();
-
-					int count10 = 0;
-					for (int i = 0; i < digest.length; i++){
-						count10 += digest[i];
-					}
-					System.out.println("\t\tReconstructed Message Digest Summation: " + count10);
-
-					System.out.println("\t\tReading in clients public key from \"client_public_key.txt\"");
-					//GET CLEINT PUBLIC KEY KUC
-					Path path = Paths.get("client_public_key.txt");
-					byte [] CKey = Files.readAllBytes(path);
-					//generate public key from bytes
-					PublicKey KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(CKey));
-					int count3 = 0;
-					for (int i = 0; i < CKey.length; i++){
-						count3 += CKey[i];
-					}
-					System.out.println("\t\tClients Public Key Summation: " + count3);
-
-					//decrypt signed hash with public key
-					byte[] decryptedHash = null;
-					Cipher hashCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-					hashCipher.init(Cipher.DECRYPT_MODE, KUC);
-					decryptedHash = hashCipher.doFinal(sigPart);
-
-					int count11 = 0;
-					for (int i = 0; i < decryptedHash.length; i++){
-						count11 += decryptedHash[i];
-					}
-					System.out.println("\t\tDecrypted Message Digest Summation: " + count11);
-					System.out.println("\t\tChecking if Authenticity was achieved");
-
-					if (Arrays.equals(decryptedHash,digest)){
-						System.out.println("\t\tAuthenticity was achieved");
-					}else{
-						System.out.println("\t\tAuthenticity was not achieved! DONT TRUST THIS MESSAGE!");
-					}
-					System.out.println("\n_.:AUTHENTICITY ENSURED:._");
-
-
-				}
-
-				catch (Exception e){
-					System.err.println("Exception: " + e);
-				}
-
+				byte[] encryptedKey = getEncrptedKeyPart(recEncryptedMessage);
+				byte[] encPayload = getEncryptedMessagePart(recEncryptedMessage);
+				decryptSharedKey(encryptedKey);
+				byte[] compPayload = decryptMessage(encPayload);
+				byte[] payload = decompressMessage(compPayload);
+				byte[] signature = getSignaturePart(payload);
+				byte[] plaintext = getPlaintext(payload);
+				byte[] plaintextHash = generatePlaintextHash(plaintext);
+				getKUC();
+				byte[] recMessageHash = decryptHash(signature);
+				authenticate(recMessageHash, plaintextHash);
 			}
-
 
 			/*
 			* close the output stream , close the input stream , close the socket .
@@ -385,8 +566,12 @@ class clientThread {
 			is.close();
 			os.close();
 			clientSocket.close();
+
+
+
 		}
 		catch(IOException e){
+			System.err.println(e);
 		}
 		System.out.println("\n\n_.:CLIENT CLOSED CONNECTION:._");
 		System.out.println("\n\n_.:SERVER SHUTTING DOWN:._");
