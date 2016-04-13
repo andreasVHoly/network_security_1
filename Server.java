@@ -20,6 +20,7 @@ import java.util.*;
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.net.NetworkInterface;
+import java.security.spec.EncodedKeySpec;
 
 
 /*
@@ -111,6 +112,10 @@ class clientThread {
 	private Socket clientSocket = null;
 	private InetAddress address;//address that holds the IP
 	private PrivateKey KRS;
+	private byte[] KRSA = {48,-126,2,117,2,1,0,48,13,6,9,42,-122,72,-122,-9,13,1,1,1,5,0,4,-126,2,95,48,-126,2,91,2,1,0,2,-127,-127,0,-91,98,35,43,-58,-114,-2,-8,90,111,-46,-127,46,102,36,-1,37,89,-15,54,71,119,-38,-62,90,106,-27,-87,-127,111,124,-96,24,67,-95,-4,-117,78,-98,71,-66,-6,120,17,-103,44,41,-59,79,38,-72,89,47,-90,-66,-50,-117,35,56,104,-16,-91,-94,51,-99,-64,89,-31,47,-65,-92,71,-10,91,67,-79,-44,94,79,100,-100,-6,75,-5,-31,-51,-73,-44,-124,60,-45,32,115,-65,-71,4,-122,-54,-43,37,-33,-81,62,-26,-126,-15,-123,-89,-103,-23,56,11,116,4,43,24,-75,-124,3,124,-42,-99,1,-31,15,53,32,-53,2,3,1,0,1,2,-127,-128,23,17,66,32,-105,-8,87,-3,-31,-9,88,-32,37,-51,-97,121,107,7,73,-118,-83,-101,61,11,0,-69,-118,63,3,75,-66,-111,65,-15,37,5,-23,-108,84,-91,99,48,-30,80,106,17,-21,-35,-106,117,-85,30,-35,115,-97,-121,-123,-122,-85,22,-112,2,58,70,72,-51,14,67,80,-21,-9,122,62,-11,-35,50,99,-8,-126,55,48,-1,-66,105,73,5,97,71,121,-64,-85,-66,16,-109,-87,4,-37,103,123,-32,16,115,-109,-7,-3,56,51,-23,121,67,-90,-84,-42,-123,-88,-86,-87,59,12,-52,9,-16,123,-66,43,-115,65,81,2,65,0,-19,91,102,-24,-21,27,-114,110,49,-36,91,1,-18,-17,45,-89,80,-126,17,76,123,-4,62,-61,45,-68,-102,-5,43,99,57,-76,70,14,19,30,99,-4,-17,23,-92,105,126,15,74,1,109,-51,45,-32,3,91,16,-102,-59,-91,124,-18,-107,-4,123,-110,111,115,2,65,0,-78,95,-118,-50,100,-6,-57,-97,-13,-103,37,87,29,14,101,25,-3,-44,-36,78,31,50,-127,20,-42,116,106,65,85,-34,37,-97,-15,-7,-51,112,-79,0,90,3,-89,-115,2,-48,-89,-106,118,-109,-102,15,116,40,-53,-4,-76,106,49,7,-53,-25,-11,7,3,73,2,64,90,-25,-62,-58,58,37,87,-85,-124,-107,44,-107,-44,-8,-19,-73,66,-14,77,-59,-55,70,-106,-109,18,21,70,22,36,75,-32,113,-42,-46,-43,39,-78,-117,-48,-42,113,53,-91,-2,29,13,-25,11,-54,34,29,-90,-26,-7,31,-15,125,-93,-78,-11,-4,45,-35,89,2,64,107,65,-24,69,-109,-110,-8,-42,-59,-76,33,47,-16,-40,-25,18,105,-1,-59,57,116,-88,-7,-43,125,-33,34,-59,-122,-52,-67,-13,31,-98,6,90,-19,20,57,12,89,-124,1,93,86,104,-77,-124,-83,-18,-4,-6,75,46,-7,-115,-95,77,-2,-34,-52,8,27,-127,2,64,33,-3,-110,-127,-45,102,3,44,-123,86,-108,-15,-97,-24,-40,115,51,108,35,102,100,-118,-48,37,26,76,-73,46,30,-106,-99,102,-37,-31,-61,-32,-91,-73,-110,-41,-1,56,-25,57,41,106,119,77,46,47,92,45,48,14,54,-73,-93,-41,-108,-122,-16,-110,-55,-34};
+	private byte[] KUSA = {48,-127,-97,48,13,6,9,42,-122,72,-122,-9,13,1,1,1,5,0,3,-127,-115,0,48,-127,-119,2,-127,-127,0,-91,98,35,43,-58,-114,-2,-8,90,111,-46,-127,46,102,36,-1,37,89,-15,54,71,119,-38,-62,90,106,-27,-87,-127,111,124,-96,24,67,-95,-4,-117,78,-98,71,-66,-6,120,17,-103,44,41,-59,79,38,-72,89,47,-90,-66,-50,-117,35,56,104,-16,-91,-94,51,-99,-64,89,-31,47,-65,-92,71,-10,91,67,-79,-44,94,79,100,-100,-6,75,-5,-31,-51,-73,-44,-124,60,-45,32,115,-65,-71,4,-122,-54,-43,37,-33,-81,62,-26,-126,-15,-123,-89,-103,-23,56,11,116,4,43,24,-75,-124,3,124,-42,-99,1,-31,15,53,32,-53,2,3,1,0,1};
+	private byte[] KUCA = {48,-127,-97,48,13,6,9,42,-122,72,-122,-9,13,1,1,1,5,0,3,-127,-115,0,48,-127,-119,2,-127,-127,0,-122,-53,-74,-87,-87,-99,124,-105,-120,-1,0,-67,-71,93,-90,112,109,30,30,5,-107,-97,61,16,74,86,112,-36,-44,-38,85,-128,4,3,98,86,99,8,-20,-96,57,-79,-59,-103,-3,-41,93,58,-99,-94,-36,63,28,70,0,-80,23,125,-66,-34,-18,116,122,77,45,-6,-30,-38,-73,-80,71,88,54,125,-87,-110,41,-86,-59,-31,79,-15,-5,78,122,-115,-43,116,-113,16,1,97,-20,-47,-66,-75,32,23,117,50,-2,11,-26,88,18,-77,27,-38,-44,63,95,66,-104,113,90,-116,-73,-58,-17,-78,67,126,-27,-63,-38,23,68,93,2,3,1,0,1};
+	private byte[] ivSpecStored = {58,66,-52,-59,-122,-124,84,-35,-6,-11,-44,-106,42,-121,32,48};
 	private PublicKey KUS;
 	private PublicKey KUC;
 	private SecretKey secretKey = null;
@@ -143,6 +148,21 @@ class clientThread {
 	}
 
 	/**
+	*creating keys from stored bytes
+	*/
+	public void createStoredKeys(){
+		try {
+			//create server keys from stored bytes
+			KUS = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(KUSA));
+			KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(KUCA));
+			KRS= KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(KRSA));
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
+	}
+
+	/**
 	 * Generates the Server's public/private key pair (KRS, KUS)
 	 */
 	public void generateKeys() {
@@ -150,15 +170,27 @@ class clientThread {
 			KRS = null;
 			//create server's assymmetric keys
 			System.out.println("\n\n_.:CREATING SERVERS PRIVATE AND PUBLIC KEYS:._");
-			KeyPairGenerator keyGen2 = KeyPairGenerator.getInstance("RSA");
+			/*KeyPairGenerator keyGen2 = KeyPairGenerator.getInstance("RSA");
 			keyGen2.initialize(1024);
 			KeyPair serverkeys = keyGen2.generateKeyPair();
 			//get keys
 			KRS = serverkeys.getPrivate();
 			KUS = serverkeys.getPublic();
 
+			System.out.println("**********************");
+			for (int i = 0; i < KRS.getEncoded().length;i++ ) {
+				System.out.print(KRS.getEncoded()[i]+",");
+			}
+			System.out.println("**********************");
+			for (int i = 0; i < KUS.getEncoded().length;i++ ) {
+				System.out.print(KUS.getEncoded()[i]+",");
+			}
+
+
+
 			System.out.println("\n\t_.:EXPORTING SERVERS PUBLIC KEY:._");
-			System.out.println("\t\tWriting public key to file \"server_public_key.txt\"");
+			System.out.println("\t\tWriting public key to file \"server_public_key.txt\"");*/
+			createStoredKeys();
 			//Write KUS to textfile server_public_key.txt
 			byte[] KUSArray = KUS.getEncoded();
 			FileOutputStream fos = new FileOutputStream("server_public_key.txt");
@@ -317,13 +349,13 @@ class clientThread {
 			System.out.println("\n\t_.:DECRYPTING COMPRESSED MESSAGE:._");
 
 			//get iv for decryption
-			System.out.println("\t\tReading in IV from file \"client_iv.txt\"");
+			/*System.out.println("\t\tReading in IV from file \"client_iv.txt\"");
 			Path path2 = Paths.get("client_iv.txt");
-			byte[] iv = Files.readAllBytes(path2);
+			byte[] iv = Files.readAllBytes(path2);*/
 
 			int count7 = 0;
-			for (int i = 0; i < iv.length; i++){
-				count7 += iv[i];
+			for (int i = 0; i < ivSpecStored.length; i++){
+				count7 += ivSpecStored[i];
 			}
 			System.out.println("\t\tIV summation: " + count7);
 
@@ -331,7 +363,7 @@ class clientThread {
 
 
 			Cipher aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			aescipher.init(Cipher.DECRYPT_MODE, sk, new IvParameterSpec(iv));
+			aescipher.init(Cipher.DECRYPT_MODE, sk, new IvParameterSpec(ivSpecStored));
 			decryptedPackage = aescipher.doFinal(crypPart);
 
 			int count8 = 0;
@@ -472,7 +504,7 @@ class clientThread {
 	 * acquires the client's public key to decrypt the digital signature (for authentication)
 	 */
 	public void getKUC () {
-		try {
+		/*try {
 			System.out.println("\t\tReading in clients public key from \"client_public_key.txt\"");
 			//GET CLEINT PUBLIC KEY KUC
 			Path path = Paths.get("client_public_key.txt");
@@ -487,7 +519,7 @@ class clientThread {
 		}
 		catch (Exception e) {
 			System.err.println(e);
-		}
+		}*/
 	}
 
 	/**

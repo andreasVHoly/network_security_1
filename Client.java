@@ -18,6 +18,7 @@ import javax.crypto.spec.*;
 //new bouncy castle libs
 import org.bouncycastle.openpgp.PGPPrivateKey;//pgp crypto
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import java.security.spec.EncodedKeySpec;
 
 
 public class Client{
@@ -34,6 +35,10 @@ public class Client{
 	private boolean closed = false; //Volatile variable?
 	private PrivateKey KRC;
 	private PublicKey KUC;
+	private byte[] KRCA = {48,-126,2,118,2,1,0,48,13,6,9,42,-122,72,-122,-9,13,1,1,1,5,0,4,-126,2,96,48,-126,2,92,2,1,0,2,-127,-127,0,-122,-53,-74,-87,-87,-99,124,-105,-120,-1,0,-67,-71,93,-90,112,109,30,30,5,-107,-97,61,16,74,86,112,-36,-44,-38,85,-128,4,3,98,86,99,8,-20,-96,57,-79,-59,-103,-3,-41,93,58,-99,-94,-36,63,28,70,0,-80,23,125,-66,-34,-18,116,122,77,45,-6,-30,-38,-73,-80,71,88,54,125,-87,-110,41,-86,-59,-31,79,-15,-5,78,122,-115,-43,116,-113,16,1,97,-20,-47,-66,-75,32,23,117,50,-2,11,-26,88,18,-77,27,-38,-44,63,95,66,-104,113,90,-116,-73,-58,-17,-78,67,126,-27,-63,-38,23,68,93,2,3,1,0,1,2,-127,-128,79,-28,-42,115,97,49,18,-13,-50,35,54,-111,61,25,32,-39,106,19,123,-65,-37,-102,-14,90,-127,117,18,-104,17,33,7,-92,68,-68,-84,-64,127,26,127,5,-56,-84,113,110,-128,97,-15,-60,24,66,-69,64,60,-59,-47,10,-114,33,-35,-53,-52,-110,5,26,115,85,-31,60,-55,-101,-61,-95,43,-108,30,-93,-102,-11,-79,118,0,-30,-60,-124,112,-61,-55,-23,13,-61,-43,-44,-22,31,91,-58,-76,42,-105,38,114,-56,98,-113,-26,83,-61,88,83,29,82,94,67,-86,103,-115,36,-46,-102,73,-84,3,-41,124,-48,-22,21,1,2,65,0,-43,-97,68,-24,-90,-24,27,-27,99,-60,-48,2,-95,-83,-24,26,-2,122,114,-109,-98,98,70,-67,50,-88,120,-54,-118,35,-18,-59,116,98,-64,57,29,127,109,94,61,9,-110,-10,-77,108,-118,-81,-120,40,-71,-69,-73,100,1,-41,-55,33,-36,-34,-101,7,-126,-111,2,65,0,-95,-119,69,-99,-94,-39,109,-73,81,3,98,-11,-30,62,0,-15,-126,-123,113,-92,100,43,97,-74,4,-59,-111,-89,-90,-86,21,44,-37,98,-50,30,82,-90,-119,27,-124,-21,8,109,-31,11,26,104,-27,-56,-77,2,82,115,-37,-6,112,-110,-68,-78,-108,102,-13,13,2,64,1,85,74,31,-51,-110,-37,65,-74,58,-81,53,-92,-2,-87,-39,41,71,104,89,-91,126,101,-124,-98,-63,80,103,-85,47,8,57,113,61,-128,-121,-102,-72,-123,-35,53,-78,78,-103,125,-117,42,-34,103,-110,33,126,-101,105,99,93,-114,98,-56,-73,22,-18,-104,17,2,64,31,92,-69,123,99,-122,-69,90,-128,12,28,70,-120,-22,104,-36,122,-18,-43,-91,-119,29,51,23,87,-51,-45,-3,-84,-54,16,-38,104,-83,-62,62,-8,-27,4,113,-89,88,-54,-122,42,-49,49,13,116,-81,-122,-79,-56,-72,93,-39,61,-55,-1,-128,-36,119,48,113,2,65,0,-115,-58,-84,127,39,46,33,117,-94,-102,18,-29,15,-99,-87,32,-53,49,11,35,31,-102,-15,-30,88,56,-27,-43,94,-44,25,-80,-102,23,-29,-74,-43,-11,-14,28,-25,106,93,12,59,48,117,-10,36,-15,125,100,-29,-102,103,-66,41,-65,-74,-35,10,19,104,21};
+	private byte[] KUCA = {48,-127,-97,48,13,6,9,42,-122,72,-122,-9,13,1,1,1,5,0,3,-127,-115,0,48,-127,-119,2,-127,-127,0,-122,-53,-74,-87,-87,-99,124,-105,-120,-1,0,-67,-71,93,-90,112,109,30,30,5,-107,-97,61,16,74,86,112,-36,-44,-38,85,-128,4,3,98,86,99,8,-20,-96,57,-79,-59,-103,-3,-41,93,58,-99,-94,-36,63,28,70,0,-80,23,125,-66,-34,-18,116,122,77,45,-6,-30,-38,-73,-80,71,88,54,125,-87,-110,41,-86,-59,-31,79,-15,-5,78,122,-115,-43,116,-113,16,1,97,-20,-47,-66,-75,32,23,117,50,-2,11,-26,88,18,-77,27,-38,-44,63,95,66,-104,113,90,-116,-73,-58,-17,-78,67,126,-27,-63,-38,23,68,93,2,3,1,0,1};
+	private byte[] KUSA = {48,-127,-97,48,13,6,9,42,-122,72,-122,-9,13,1,1,1,5,0,3,-127,-115,0,48,-127,-119,2,-127,-127,0,-91,98,35,43,-58,-114,-2,-8,90,111,-46,-127,46,102,36,-1,37,89,-15,54,71,119,-38,-62,90,106,-27,-87,-127,111,124,-96,24,67,-95,-4,-117,78,-98,71,-66,-6,120,17,-103,44,41,-59,79,38,-72,89,47,-90,-66,-50,-117,35,56,104,-16,-91,-94,51,-99,-64,89,-31,47,-65,-92,71,-10,91,67,-79,-44,94,79,100,-100,-6,75,-5,-31,-51,-73,-44,-124,60,-45,32,115,-65,-71,4,-122,-54,-43,37,-33,-81,62,-26,-126,-15,-123,-89,-103,-23,56,11,116,4,43,24,-75,-124,3,124,-42,-99,1,-31,15,53,32,-53,2,3,1,0,1};
+	private byte[] ivSpecStored = {58,66,-52,-59,-122,-124,84,-35,-6,-11,-44,-106,42,-121,32,48};
 	private SecretKey secretKey;
 	private SecretKeySpec k;
 	private PublicKey KUS;
@@ -120,7 +125,7 @@ public class Client{
 		//default message
 		String plaintext = "This is what we want to encrypt!!!!!!!! This is a message we are testing";
 
-
+		createStoredKeys();
 		//get input from the user to get a message to decrypt
 		clientIn = new Scanner(System.in);
 		System.out.println("Please enter a message to encrypt: ");
@@ -141,6 +146,22 @@ public class Client{
 		byte[] encryptedKey = encryptSecretKey();
 		byte[] finCiphertext = generateFinalCiphertext(encryptedKey, ciphertext);
 		sendMessage(finCiphertext);
+	}
+
+	/**
+	*creating keys from stored bytes
+	*/
+	public void createStoredKeys(){
+		//System.out.println("**************************called");
+		try {
+			//create server keys from stored bytes
+			KUS = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(KUSA));
+			KUC = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(KUCA));
+			KRC= KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(KRCA));
+		}
+		catch (Exception e) {
+			System.err.println(e);
+		}
 	}
 
 	/**
@@ -207,13 +228,23 @@ public class Client{
 		try {
 			//create private and public keys for client
 			System.out.println("\n\t.:CREATING PRIVATE AND PUBLIC KEY PAIR:.");
-			KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+			/*KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 			keyGen.initialize(1024);
 			KeyPair keys = keyGen.generateKeyPair();
 
 			//get the key from the generator
 			KRC = keys.getPrivate();
 			KUC = keys.getPublic();
+
+			System.out.println("**********************");
+			for (int i = 0; i < KRC.getEncoded().length;i++ ) {
+				System.out.print(KRC.getEncoded()[i]+",");
+			}
+			System.out.println("**********************");
+			for (int i = 0; i < KUC.getEncoded().length;i++ ) {
+				System.out.print(KUC.getEncoded()[i]+",");
+			}*/
+			createStoredKeys();
 
 			//convert to bytes
 			byte[] KUCArray = KUC.getEncoded();
@@ -225,11 +256,11 @@ public class Client{
 			}
 			System.out.println("\t\tPublic Key Summation: " + count1);
 
-			System.out.println("\t\tWriting Public Key to file \"client_public_key.txt\"");
+			/*System.out.println("\t\tWriting Public Key to file \"client_public_key.txt\"");
 			//write out the public key to a file
 			FileOutputStream fos = new FileOutputStream("client_public_key.txt");
 			fos.write(KUCArray);
-			fos.close();
+			fos.close();*/
 		}
 		catch (Exception e) {
 			System.err.println(e);
@@ -385,7 +416,7 @@ public class Client{
 		byte[] ciphertext = null;
 		try {
 			aescipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-			aescipher.init(Cipher.ENCRYPT_MODE, k);
+			aescipher.init(Cipher.ENCRYPT_MODE, k, new IvParameterSpec(ivSpecStored));
 			ciphertext = aescipher.doFinal(compMessage);
 
 
@@ -407,21 +438,24 @@ public class Client{
 	 */
 	public void generateIV () {
 		try {
-			System.out.println("\t\tExtracting the IV for decryption");
+			System.out.println("\t\tGenerating IV for decryption");
+
+
 
 			//get iv from cipher
-			byte[] iv = aescipher.getIV();
+			//byte[] iv = aescipher.getIV();
 
 			int count7 = 0;
-			for (int i = 0; i < iv.length; i++){
-				count7 += iv[i];
+			for (int i = 0; i < ivSpecStored.length; i++){
+				count7 += ivSpecStored[i];
+				//System.out.print(iv[i]+",");
 			}
 			System.out.println("\t\tIV Summation: " + count7);
 			//write iv to a file
-			System.out.println("\t\tWriting IV to file \"client_iv.txt\"");
+			/*System.out.println("\t\tWriting IV to file \"client_iv.txt\"");
 			FileOutputStream fos2 = new FileOutputStream("client_iv.txt");
 			fos2.write(iv);
-			fos2.close();
+			fos2.close();*/
 		}
 		catch (Exception e) {
 			System.err.println(e);
@@ -432,7 +466,7 @@ public class Client{
 	 * Acquire the server's public key KUS
 	 */
 	public void getKUS () {
-		try {
+		/*try {
 			// get server key from file
 			System.out.println("\t\tReading in public key from file \"server_public_key.txt\"");
 			Path path = Paths.get("server_public_key.txt");
@@ -443,7 +477,7 @@ public class Client{
 		}
 		catch (Exception e) {
 			System.err.println(e);
-		}
+		}*/
 	}
 
 	/**
