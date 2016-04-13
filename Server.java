@@ -193,9 +193,9 @@ class clientThread {
 			createStoredKeys();
 			//Write KUS to textfile server_public_key.txt
 			byte[] KUSArray = KUS.getEncoded();
-			FileOutputStream fos = new FileOutputStream("server_public_key.txt");
+			/*FileOutputStream fos = new FileOutputStream("server_public_key.txt");
 			fos.write(KUSArray);
-			fos.close();
+			fos.close();*/
 			int count1 = 0;
 			for (int i = 0; i < KUSArray.length; i++){
 				count1 += KUSArray[i];
